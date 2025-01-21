@@ -48,10 +48,6 @@ Thumbs.db
 # Test reports
 test-reports/
 
-# Docker
-Dockerfile*
-docker-compose*
-docker-compose.override.yml
 
 # Configuration files
 *.ini
