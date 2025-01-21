@@ -1,0 +1,73 @@
+.env
+avatar-backend-venv
+
+*.txt
+*.pyc
+
+# Python files
+*.pyc
+*.pyo
+*~
+__pycache__/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Logs
+*.log
+
+# FastAPI specific files
+*.db
+*.sqlite3
+
+# IDE configuration files
+.vscode/
+.idea/
+
+# Dependency files
+Pipfile.lock
+requirements.txt
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/build/
+/dist/
+/*.egg-info
+*.egg
+.eggs/
+
+# Test reports
+test-reports/
+
+# Docker
+Dockerfile*
+docker-compose*
+docker-compose.override.yml
+
+# Configuration files
+*.ini
+*.cfg
+*.yml
+*.yaml
+
+# Secrets and environment variables
+.env
+.env.*
+
+# Node.js (in case you use npm for any frontend assets or tools)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Miscellaneous
+*.swp
+*.swo
