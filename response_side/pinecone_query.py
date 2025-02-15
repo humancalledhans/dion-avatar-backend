@@ -2,14 +2,15 @@ import os
 from pinecone import Pinecone
 
 from pinecone_upsert import get_text_embedding
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+# PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_API_KEY = "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27"
 
 
 def retrieve_relevant_docs(query, top_k=5):
 
     print("RRD 1", PINECONE_API_KEY)
     pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index("dion-gpt")
+    index = pc.Index("agent-c")
 
     print("RRD 2")
 
