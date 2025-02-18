@@ -40,11 +40,11 @@ def chunk_text(text):
     # Manage chunk size
     refined_chunks = []
     for chunk in chunks:
-        if len(chunk) > 2000:  # Adjust this threshold as needed
+        if len(chunk) > 3000:  # Adjust this threshold as needed
             sub_chunks = []
             current_sub_chunk = ""
             for para in re.split(r'\n\n', chunk):
-                if len(current_sub_chunk + para) > 2000:
+                if len(current_sub_chunk + para) > 3000:
                     sub_chunks.append(current_sub_chunk.strip())
                     current_sub_chunk = para
                 else:

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from response_side.openai_generate_response import generate_response
+from response_side.openai_generate_response import generate_agent_c_response, generate_response
 from response_side.pinecone_query import retrieve_relevant_docs
 from scehema import SchemasCopy
 
@@ -32,5 +32,19 @@ async def fetch_embedding(req_body: SchemasCopy):
         return "No relevant documents found to answer this query."
 
     response = generate_response(query, relevant_docs)
+    print('whats the response? a string?', response)
+    return {'data': response}
+
+
+@app.post("/fetch_agent_output")
+async def fetch_embedding(req_body: SchemasCopy):
+    query = req_body.user_input
+    print('check out the query first pro', query)
+    relevant_docs = retrieve_relevant_docs(query)
+
+    if not relevant_docs:
+        return "No relevant documents found to answer this query."
+
+    response = generate_agent_c_response(query, relevant_docs)
     print('whats the response? a string?', response)
     return {'data': response}
