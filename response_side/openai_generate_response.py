@@ -32,7 +32,7 @@ def generate_agent_c_response(query, relevant_docs):
 
     # Construct the prompt
     messages = [
-        {"role": "system", "content": "You are a helpful assistant that answers user's questions on discord."},
+        {"role": "system", "content": "You are a helpful assistant that answers user's questions on discord as concise yet as persuasive as possible."},
         {"role": "user", "content": f"""Given the fact that:\n\n{
             context}\n\nAnswer the following query: {query}"""}
     ]

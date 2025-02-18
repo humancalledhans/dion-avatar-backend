@@ -47,4 +47,18 @@ async def fetch_embedding(req_body: SchemasCopy):
 
     response = generate_agent_c_response(query, relevant_docs)
     print('whats the response? a string?', response)
+
+    max_tries = 5
+    for attempt in range(max_tries):
+        if len(response) <= 1999:
+            break
+        response = generate_agent_c_response(query, relevant_docs)
+        print(
+            f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
+
+    if len(response) > 1999:
+        print("Unable to generate a response shorter than 2000 characters after several attempts.")
+        # Optionally truncate the response, but this should be rare
+        response = response[:1999]
+
     return {'data': response}
