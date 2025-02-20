@@ -41,7 +41,7 @@ def pinecone_upsert():
     if response.status_code == 200:
         indexes = json.loads(response.text)
         index_names = [index['name'] for index in indexes['indexes']]
-        index_name = "agent-c"
+        index_name = "agent-t"
 
         if index_name not in index_names:
             print(f"Index '{index_name}' does not exist. Creating it now.")
@@ -85,7 +85,7 @@ def pinecone_upsert():
         index = pc.Index(index_name)
 
         # Directory where txt files are stored
-        training_data_dir = "training_data/agent_c"
+        training_data_dir = "training_data/agent_t"
 
         # Iterate over each file in the directory
         for filename in os.listdir(training_data_dir):
