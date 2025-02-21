@@ -70,7 +70,7 @@ async def fetch_embedding(req_body: SchemasCopy):
 async def fetch_embedding(req_body: SchemasCopy):
     query = req_body.user_input
     print('check out the query first pro', query)
-    relevant_docs = retrieve_relevant_docs(query, index_name="agent-ta")
+    relevant_docs = retrieve_relevant_docs(query, index_name="agent-tltp")
 
     if not relevant_docs:
         return "No relevant documents found to answer this query."
