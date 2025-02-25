@@ -44,7 +44,7 @@ def generate_agent_c_response(query, relevant_docs, previous_user_message=None, 
 
     messages = [
         {
-            "role": "developer",
+            "role": "system",
             "content": (
                 "You are Agent C, an expert customer service agent for the course \"Trade Like The Pros\". "
                 "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
@@ -89,7 +89,7 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
 
     messages = [
         {
-            "role": "developer",
+            "role": "system",
             "content": (
                 "You are Agent TLTP, an expert customer service agent for the course \"Trade Like The Pros\". "
                 "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
