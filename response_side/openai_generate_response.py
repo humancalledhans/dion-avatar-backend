@@ -52,7 +52,7 @@ def generate_agent_c_response(query, relevant_docs, previous_user_message=None, 
         {
             "role": "user",
             "content": (
-                f"{past_context}"
+                f"User's past messages: {past_context}"
                 f"Given the following information:\n\n{context}\n\n"
                 f"Answer this query: {query}"
             )
@@ -95,7 +95,7 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
         {
             "role": "user",
             "content": (
-                f"{past_context}"
+                f"User's past messages: {past_context}"
                 f"Given the following information:\n\n{context}\n\n"
                 f"Answer the following question in less than 1999 characters: {query}"
             )
