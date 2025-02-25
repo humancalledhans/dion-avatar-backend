@@ -38,7 +38,9 @@ def generate_agent_c_response(query, relevant_docs, previous_user_message=None, 
             past_context += f"Previous user message: {previous_user_message}\n"
         if previous_bot_reply:
             past_context += f"Previous bot reply: {previous_bot_reply}\n"
-        past_context += "Use this history to provide a more informed and context-aware response.\n\n"
+        past_context += "Use this chat history to provide a more informed and context-aware response.\n\n"
+
+    print("check out past context", past_context)
 
     messages = [
         {
@@ -81,7 +83,9 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
             past_context += f"Previous user message: {previous_user_message}\n"
         if previous_bot_reply:
             past_context += f"Previous bot reply: {previous_bot_reply}\n"
-        past_context += "Use this history to provide a more informed and context-aware response.\n\n"
+        past_context += "Use this chat history to provide a more informed and context-aware response.\n\n"
+
+    print("check out past context", past_context)
 
     messages = [
         {
