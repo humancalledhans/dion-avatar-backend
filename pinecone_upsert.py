@@ -85,7 +85,7 @@ def pinecone_upsert():
         index = pc.Index(index_name)
 
         # Directory where txt files are stored
-        training_data_dir = "training_data/agent_tltp"
+        training_data_dir = "training_data/agent-tltp"
 
         # Iterate over each file in the directory
         for filename in os.listdir(training_data_dir):
