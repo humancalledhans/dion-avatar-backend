@@ -6,7 +6,7 @@ from pinecone_upsert import get_text_embedding
 PINECONE_API_KEY = "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27"
 
 
-def retrieve_relevant_docs(query, index_name, top_k=7):
+def retrieve_relevant_docs(query, index_name, top_k=3):
 
     print("RRD 1", PINECONE_API_KEY)
     pc = Pinecone(api_key=PINECONE_API_KEY)
