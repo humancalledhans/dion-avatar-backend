@@ -26,7 +26,7 @@ def generate_response(query, relevant_docs):
     return completion.choices[0].message.content.strip()
 
 
-def generate_agent_c_response(query, relevant_docs, previous_user_message=None, previous_bot_reply=None):
+def generate_agent_t_response(query, relevant_docs, previous_user_message=None, previous_bot_reply=None):
     # Prepare the context from relevant documents
     context = "\n\n".join([doc['text'] for doc in relevant_docs])
 
@@ -46,7 +46,7 @@ def generate_agent_c_response(query, relevant_docs, previous_user_message=None, 
         {
             "role": "system",
             "content": (
-                "You are Agent C, an expert customer service agent for the course \"Trade Like The Pros\". "
+                "You are Agent T, an expert customer service agent for the course \"Trade Like The Pros\". "
                 "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
                 "and with awareness of the conversation history when provided."
                 "Note that questions related to the actual courses content should be answered by Agent TLTP. Agent TLTP is a paid bot that only paid members have access to."

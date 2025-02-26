@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from response_side.openai_generate_response import generate_agent_c_response, generate_agent_ta_response, generate_response
+from response_side.openai_generate_response import generate_agent_t_response, generate_agent_ta_response, generate_response
 from response_side.pinecone_query import retrieve_relevant_docs
 from scehema import SchemasCopy
 
@@ -50,7 +50,7 @@ async def fetch_embedding(req_body: SchemasCopy):
     if not relevant_docs:
         return "No relevant documents found to answer this query."
 
-    response = generate_agent_c_response(
+    response = generate_agent_t_response(
         query, relevant_docs, previous_user_message, previous_bot_reply)
     print('whats the response? a string?', response)
 
@@ -59,7 +59,7 @@ async def fetch_embedding(req_body: SchemasCopy):
     for attempt in range(max_tries):
         if len(response) <= 1999:
             break
-        response = generate_agent_c_response(
+        response = generate_agent_t_response(
             query, relevant_docs, previous_user_message, previous_bot_reply)
         print(
             f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
