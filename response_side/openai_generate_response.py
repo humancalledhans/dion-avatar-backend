@@ -49,6 +49,7 @@ def generate_agent_c_response(query, relevant_docs, previous_user_message=None, 
                 "You are Agent C, an expert customer service agent for the course \"Trade Like The Pros\". "
                 "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
                 "and with awareness of the conversation history when provided."
+                "Note that content related to the actual courses should be answered by Agent TLTP. So, please redirect users to Agent TLTP when appropriate."
             )
         },
         {
