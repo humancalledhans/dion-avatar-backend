@@ -41,7 +41,7 @@ def pinecone_upsert():
     if response.status_code == 200:
         indexes = json.loads(response.text)
         index_names = [index['name'] for index in indexes['indexes']]
-        index_name = "agent-tltp"
+        index_name = "agent-t"
 
         if index_name not in index_names:
             print(f"Index '{index_name}' does not exist. Creating it now.")
@@ -84,39 +84,49 @@ def pinecone_upsert():
 
         index = pc.Index(index_name)
 
-        # Directory where txt files are stored
-        training_data_dir = "training_data/agent-tltp"
+        # Directories where txt files are stored
+        training_data_dir = "training_data/agent-t"
+        common_dir = "training_data/common"  # Adding the common directory
 
-        # Iterate over each file in the directory
-        for filename in os.listdir(training_data_dir):
-            if filename.endswith(".txt"):
-                file_path = os.path.join(training_data_dir, filename)
+        # List of directories to process
+        directories = [training_data_dir, common_dir]
 
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    text = file.read().strip()  # Read content of the file
+        # Iterate over each directory
+        for directory in directories:
+            # Check if directory exists to avoid errors
+            if os.path.exists(directory):
+                # Iterate over each file in the directory
+                for filename in os.listdir(directory):
+                    if filename.endswith(".txt"):
+                        file_path = os.path.join(directory, filename)
 
-                    # Chunk the text
-                    chunks = chunk_text(text)
+                        with open(file_path, 'r', encoding='utf-8') as file:
+                            text = file.read().strip()  # Read content of the file
 
-                    for i, chunk in enumerate(chunks):
-                        # Convert each chunk to vector using OpenAI's embedding model
-                        vector = get_text_embedding(chunk)
+                            # Chunk the text
+                            chunks = chunk_text(text)
 
-                        # Create an entry for upsert with a unique ID based on filename and chunk index
-                        entry = {
-                            "id": f"{filename.split('.')[0]}_{i}",
-                            "values": vector,
-                            "metadata": {
-                                "source": filename,
-                                "chunk_index": i,
-                                "total_chunks": len(chunks),
-                                "text": chunk
-                            }
-                        }
+                            for i, chunk in enumerate(chunks):
+                                # Convert each chunk to vector using OpenAI's embedding model
+                                vector = get_text_embedding(chunk)
 
-                        # Upsert the vector into Pinecone
-                        index.upsert(vectors=[entry], namespace="ns1")
-                        print(f"Upserted: {filename}, chunk {i}")
+                                # Create an entry for upsert with a unique ID based on directory, filename and chunk index
+                                entry = {
+                                    "id": f"{directory.split('/')[-1]}_{filename.split('.')[0]}_{i}",
+                                    "values": vector,
+                                    "metadata": {
+                                        "source": filename,
+                                        "directory": directory,
+                                        "chunk_index": i,
+                                        "total_chunks": len(chunks),
+                                        "text": chunk
+                                    }
+                                }
+
+                                # Upsert the vector into Pinecone
+                                index.upsert(vectors=[entry], namespace="ns1")
+                                print(
+                                    f"Upserted: {directory}/{filename}, chunk {i}")
     else:
         print(f"Failed to fetch indexes. Status code: {response.status_code}")
 
