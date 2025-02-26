@@ -54,8 +54,8 @@ def generate_agent_c_response(query, relevant_docs, previous_user_message=None, 
         {
             "role": "user",
             "content": (
-                f"User's past chat messages: {past_context}"
-                f"Given the following information from the CUstomer Service Database:\n\n{context}\n\n"
+                f"User has asked these: {past_context}"
+                f"Given the following information from the Customer Service Database:\n\n{context}\n\n"
                 f"Answer this query: {query}"
             )
         }
@@ -99,7 +99,7 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
         {
             "role": "user",
             "content": (
-                f"User's past chat messages: {past_context}"
+                f"User has asked these: {past_context}"
                 f"Given the following information from the TLTP Course:\n\n{context}\n\n"
                 f"Answer the following question in less than 1999 characters: {query}"
             )
