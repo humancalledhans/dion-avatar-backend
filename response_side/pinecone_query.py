@@ -8,16 +8,11 @@ PINECONE_API_KEY = "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1X
 
 def retrieve_relevant_docs(query, index_name, top_k=5):
 
-    print("RRD 1", PINECONE_API_KEY)
     pc = Pinecone(api_key=PINECONE_API_KEY)
     index = pc.Index(index_name)
 
-    print("RRD 2")
-
     # Get embedding for the query
     query_embedding = get_text_embedding(query)
-
-    print("RRD 3", len(query_embedding))
 
     # Query the index
     query_result = index.query(
@@ -27,13 +22,9 @@ def retrieve_relevant_docs(query, index_name, top_k=5):
         namespace='ns1'
     )
 
-    print("RRD 4", query_result)
-
     # Sort by score in descending order for relevance
     sorted_results = sorted(query_result.matches,
                             key=lambda x: x.score, reverse=True)
-
-    print("RRD 5", sorted_results)
 
     # Retrieve documents
     relevant_docs = []
@@ -42,7 +33,5 @@ def retrieve_relevant_docs(query, index_name, top_k=5):
             'text': match.metadata['text'],
             'score': match.score
         })
-
-        print('relevant docs', relevant_docs)
 
     return relevant_docs
