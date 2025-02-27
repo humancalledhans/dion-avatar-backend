@@ -40,8 +40,6 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
             past_context += f"Previous bot reply: {previous_bot_reply}\n"
         past_context += "Use this chat history to provide a more informed and context-aware response.\n\n"
 
-    print("check out past context", past_context)
-
     messages = [
         {
             "role": "system",
@@ -63,6 +61,8 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
             )
         }
     ]
+
+    print("full message with gpt t", messages)
 
     client = OpenAI()
 
@@ -88,8 +88,6 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
             past_context += f"Previous bot reply: {previous_bot_reply}\n"
         past_context += "Use this chat history to provide a more informed and context-aware response.\n\n"
 
-    print("check out past context", past_context)
-
     messages = [
         {
             "role": "system",
@@ -108,6 +106,8 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
             )
         }
     ]
+
+    print("full message with gpt ta", messages)
 
     client = OpenAI()
 

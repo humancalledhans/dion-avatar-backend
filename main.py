@@ -41,10 +41,6 @@ async def fetch_embedding(req_body: SchemasCopy):
     query = req_body.user_input
     previous_user_message = req_body.previous_user_message
     previous_bot_reply = req_body.previous_bot_reply
-    print('Received query:', query)
-    print('Previous user message:', previous_user_message)
-    print('Previous bot reply:', previous_bot_reply)
-    print('check out the query first pro', query)
     relevant_docs = retrieve_relevant_docs(query, index_name="agent-t")
 
     if not relevant_docs:
@@ -52,7 +48,6 @@ async def fetch_embedding(req_body: SchemasCopy):
 
     response = generate_agent_t_response(
         query, relevant_docs, previous_user_message, previous_bot_reply)
-    print('whats the response? a string?', response)
 
     #
     max_tries = 5
@@ -78,9 +73,6 @@ async def fetch_embedding(req_body: SchemasCopy):
     query = req_body.user_input
     previous_user_message = req_body.previous_user_message
     previous_bot_reply = req_body.previous_bot_reply
-    print('Received query:', query)
-    print('Previous user message:', previous_user_message)
-    print('Previous bot reply:', previous_bot_reply)
 
     relevant_docs = retrieve_relevant_docs(query, index_name="agent-tltp")
 
@@ -89,7 +81,6 @@ async def fetch_embedding(req_body: SchemasCopy):
 
     response = generate_agent_ta_response(
         query, relevant_docs, previous_user_message, previous_bot_reply)
-    print('Generated response:', response)
 
     # Ensure response fits Discord's 2000-character limit
     max_tries = 5
