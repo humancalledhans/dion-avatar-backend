@@ -63,7 +63,8 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
             }
         ]
 
-        print("full message with gpt t", messages)
+        import logging
+        logging.info("full message with gpt t", messages)
 
         client = OpenAI()
 
