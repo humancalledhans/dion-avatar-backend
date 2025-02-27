@@ -27,51 +27,55 @@ def generate_response(query, relevant_docs):
 
 
 def generate_agent_t_response(query, relevant_docs, previous_user_message=None, previous_bot_reply=None):
-    # Prepare the context from relevant documents
-    context = "\n\n".join([doc['text'] for doc in relevant_docs])
+    try:
+        # Prepare the context from relevant documents
+        context = "\n\n".join([doc['text'] for doc in relevant_docs])
 
-    # Construct the prompt with past message awareness
-    past_context = ""
-    if previous_user_message or previous_bot_reply:
-        past_context = "You have access to the following recent conversation history:\n"
-        if previous_user_message:
-            past_context += f"Previous user message: {previous_user_message}\n"
-        if previous_bot_reply:
-            past_context += f"Previous bot reply: {previous_bot_reply}\n"
-        past_context += "Use this chat history to provide a more informed and context-aware response.\n\n"
+        # Construct the prompt with past message awareness
+        past_context = ""
+        if previous_user_message or previous_bot_reply:
+            past_context = "You have access to the following recent conversation history:\n"
+            if previous_user_message:
+                past_context += f"Previous user message: {previous_user_message}\n"
+            if previous_bot_reply:
+                past_context += f"Previous bot reply: {previous_bot_reply}\n"
+            past_context += "Use this chat history to provide a more informed and context-aware response.\n\n"
 
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                "You are Agent T, an expert customer service agent for the course \"Trade Like The Pros\". "
-                "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
-                "and with awareness of the conversation history when provided."
-                "Note that questions related to the actual courses content should be answered by Agent TLTP. Agent TLTP is a paid bot that only paid members have access to."
-                "So, please redirect users to Agent TLTP ONLY when you don't have the related query in your customer service database."
-                "Feel free to answer anything regarding offers, if you have them in the customer service database."
-            )
-        },
-        {
-            "role": "user",
-            "content": (
-                f"User has asked these: {past_context}"
-                f"Prioritise and understand user's past chats. If and Only if useful, use these information from the Customer Service Database:\n\n{context}\n\n"
-                f"Answer this query: {query}"
-            )
-        }
-    ]
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are Agent T, an expert customer service agent for the course \"Trade Like The Pros\". "
+                    "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
+                    "and with awareness of the conversation history when provided."
+                    "Note that questions related to the actual courses content should be answered by Agent TLTP. Agent TLTP is a paid bot that only paid members have access to."
+                    "So, please redirect users to Agent TLTP ONLY when you don't have the related query in your customer service database."
+                    "Feel free to answer anything regarding offers, if you have them in the customer service database."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"User has asked these: {past_context}"
+                    f"Prioritise and understand user's past chats. If and Only if useful, use these information from the Customer Service Database:\n\n{context}\n\n"
+                    f"Answer this query: {query}"
+                )
+            }
+        ]
 
-    print("full message with gpt t", messages)
+        print("full message with gpt t", messages)
 
-    client = OpenAI()
+        client = OpenAI()
 
-    completion = client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages
-    )
+        completion = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages
+        )
 
-    return completion.choices[0].message.content.strip()
+        return completion.choices[0].message.content.strip()
+
+    except Exception as er:
+        print("exception in genet t response", er)
 
 
 def generate_agent_ta_response(query, relevant_docs, previous_user_message=None, previous_bot_reply=None):
