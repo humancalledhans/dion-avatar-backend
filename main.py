@@ -39,10 +39,8 @@ async def fetch_embedding(req_body: SchemasCopy):
 @app.post("/fetch_agent_output")
 async def fetch_embedding(req_body: SchemasCopy):
     query = req_body.user_input
-    # previous_user_message = req_body.previous_user_message
-    # previous_bot_reply = req_body.previous_bot_reply
-    previous_user_message = None
-    previous_bot_reply = None
+    previous_user_message = req_body.previous_user_message
+    previous_bot_reply = req_body.previous_bot_reply
     relevant_docs = retrieve_relevant_docs(query, index_name="agent-t")
 
     if not relevant_docs:
