@@ -36,6 +36,29 @@ def pinecone_upsert():
         "Api-Key": "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27",
         "X-Pinecone-API-Version": "2025-04"
     }
+
+    product_mapping = {
+        "tltp_main_course": "TLTP Main Course",
+        "trade_journal_offer": "Trade Journal Offer",
+        "tltp_toolkit_mid_ticket_offer": "TLTP Toolkit, Mid Level Offer",
+        "tltp_offers_description": "All TLTP Offers & Brief Descriptions",
+        "7_day_funded_trader_challenge": "7-day Funded Trader Challenge",
+        "faq": "Frequently Asked Questions & Answers",
+    }
+
+    # Extract base filename (without extension) and convert to lowercase for matching
+    base_name = filename.split(".")[0].lower()
+
+    # Get product name from mapping, default to None if not found (or raise error—see below)
+    product_name = product_mapping.get(base_name)
+    if product_name is None:
+        product_name = base_name.replace("_", "")
+        # raise ValueError(
+        #     f"Unknown filename '{filename}' - no matching product defined")
+
+    # Log the upsert attempt
+    print(f"Upserting content from {filename} as product: {product_name}")
+
     response = requests.get("https://api.pinecone.io/indexes", headers=headers)
 
     if response.status_code == 200:
@@ -103,30 +126,41 @@ def pinecone_upsert():
                         with open(file_path, 'r', encoding='utf-8') as file:
                             text = file.read().strip()  # Read content of the file
 
+                            # Extract base filename (without extension) for product mapping
+                            base_name = filename.split(".")[0].lower()
+
+                            # Get product name from mapping; error if not found
+                            product_name = product_mapping.get(base_name)
+                            if product_name is None:
+                                raise ValueError(
+                                    f"Unknown filename '{filename}' in {directory} - no matching product defined")
+
                             # Chunk the text
                             chunks = chunk_text(text)
 
+                            # Upsert each chunk
                             for i, chunk in enumerate(chunks):
-                                # Convert each chunk to vector using OpenAI's embedding model
+                                # Convert chunk to vector
                                 vector = get_text_embedding(chunk)
 
-                                # Create an entry for upsert with a unique ID based on directory, filename and chunk index
-                                entry = {
-                                    "id": f"{directory.split('/')[-1]}_{filename.split('.')[0]}_{i}",
-                                    "values": vector,
-                                    "metadata": {
-                                        "source": filename,
-                                        "directory": directory,
-                                        "chunk_index": i,
-                                        "total_chunks": len(chunks),
-                                        "text": chunk
-                                    }
+                                # Create a unique ID based on directory, filename, and chunk index
+                                doc_id = f"{directory.split('/')[-1]}_{base_name}_{i}"
+
+                                # Prepare metadata with product name
+                                metadata = {
+                                    "product": product_name,
+                                    "source": filename,
+                                    "directory": directory,
+                                    "chunk_index": i,
+                                    "total_chunks": len(chunks),
+                                    "text": chunk
                                 }
 
                                 # Upsert the vector into Pinecone
-                                index.upsert(vectors=[entry], namespace="ns1")
+                                index.upsert(
+                                    vectors=[(doc_id, vector, metadata)], namespace="ns1")
                                 print(
-                                    f"Upserted: {directory}/{filename}, chunk {i}")
+                                    f"Upserted: {directory}/{filename}, chunk {i}, product: {product_name}")
     else:
         print(f"Failed to fetch indexes. Status code: {response.status_code}")
 

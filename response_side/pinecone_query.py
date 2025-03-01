@@ -7,31 +7,39 @@ PINECONE_API_KEY = "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1X
 
 
 def retrieve_relevant_docs(query, index_name, top_k=5):
+    try:
+        # Initialize Pinecone
+        pc = Pinecone(api_key="YOUR_PINECONE_API_KEY")
+        index = pc.Index(index_name)
 
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index(index_name)
+        # Get embedding for the query
+        query_embedding = get_text_embedding(query)
 
-    # Get embedding for the query
-    query_embedding = get_text_embedding(query)
+        # Query the index
+        query_result = index.query(
+            vector=query_embedding,
+            top_k=top_k,
+            include_metadata=True,
+            namespace='ns1'
+        )
 
-    # Query the index
-    query_result = index.query(
-        vector=query_embedding,
-        top_k=top_k,
-        include_metadata=True,
-        namespace='ns1'
-    )
+        # Sort by score in descending order for relevance
+        sorted_results = sorted(query_result.matches,
+                                key=lambda x: x.score, reverse=True)
 
-    # Sort by score in descending order for relevance
-    sorted_results = sorted(query_result.matches,
-                            key=lambda x: x.score, reverse=True)
+        # Retrieve documents with full metadata
+        relevant_docs = []
+        for match in sorted_results:
+            relevant_docs.append({
+                'text': match.metadata['text'],
+                'product': match.metadata.get('product', 'Unknown'),
+                'score': match.score
+            })
 
-    # Retrieve documents
-    relevant_docs = []
-    for match in sorted_results:
-        relevant_docs.append({
-            'text': match.metadata['text'],
-            'score': match.score
-        })
+        print(
+            f"Retrieved {len(relevant_docs)} relevant docs for query: '{query}'")
+        return relevant_docs
 
-    return relevant_docs
+    except Exception as e:
+        print(f"Error retrieving docs for query '{query}': {str(e)}")
+        return []
