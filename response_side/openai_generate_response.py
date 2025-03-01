@@ -28,9 +28,11 @@ def generate_response(query, relevant_docs):
 
 def generate_agent_t_response(query, relevant_docs, previous_user_message=None, previous_bot_reply=None):
     try:
-        # Prepare the context from relevant documents, including product names
+        # Prepare the context from relevant documents, including product names and websites if present
         context = "\n\n".join(
-            [f"Product: {doc['product']} - {doc['text']}" for doc in relevant_docs])
+            [f"Product: {doc['product']}" + (f" - Website: {doc['website']}" if 'website' in doc else "") + f" - {doc['text']}"
+             for doc in relevant_docs]
+        )
 
         # Construct past conversation context with explicit instructions
         past_context = ""
@@ -54,7 +56,7 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
                     "You must remain aware of conversation history when provided and use it to maintain context. "
                     "You do not have access to detailed course content, which is handled by Agent TLTP, a paid bot exclusive to subscribed members. "
                     "Redirect users to Agent TLTP only if the query specifically requires detailed course content not found in the customer service database, and explain why. "
-                    "For questions about offers or products, provide precise answers from the database, using the product names (e.g., 'TLTP Toolkit, Mid Level Offer') to ensure clarity."
+                    "For questions about offers or products, provide precise answers from the database, using the product names (e.g., 'TLTP Toolkit, Mid Level Offer') and including the website URL (e.g., 'https://www.tradelikethepros.com/toolkit-mid-ticket') in your response if it exists in the database to offer additional resources."
                 )
             },
             {
@@ -62,7 +64,7 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
                 "content": (
                     f"{past_context} "
                     "The user has asked the following question, and you must prioritize past chats to ensure consistency. "
-                    f"Here is the customer service database information, labeled by product, which you should use only if relevant: {context} "
+                    f"Here is the customer service database information, labeled by product and including website URLs where available, which you should use only if relevant: {context} "
                     f"Answer the current query accurately and concisely: {query} "
                     "If the query is ambiguous based on history or database context, ask the user to clarify which product they mean (e.g., 'TLTP Toolkit, Mid Level Offer' or 'TLTP Main Course')."
                 )

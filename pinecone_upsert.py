@@ -12,7 +12,8 @@ load_dotenv()
 
 # API keys
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+# PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_API_KEY = "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27"
 PINECONE_ENV = os.getenv("PINECONE_ENVIRONMENT")
 
 openai.api_key = OPENAI_API_KEY
@@ -28,141 +29,156 @@ def get_text_embedding(text):
 
 
 def pinecone_upsert():
-    pc = Pinecone(
-        api_key="pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27")
+    try:
+        pc = Pinecone(api_key=PINECONE_API_KEY)
 
-    # Fetch indexes list directly from the API
-    headers = {
-        "Api-Key": "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27",
-        "X-Pinecone-API-Version": "2025-04"
-    }
+        # Fetch indexes list directly from the API
+        headers = {
+            "Api-Key": PINECONE_API_KEY,
+            "X-Pinecone-API-Version": "2025-04"
+        }
 
-    product_mapping = {
-        "tltp_main_course": "TLTP Main Course",
-        "trade_journal_offer": "Trade Journal Offer",
-        "tltp_toolkit_mid_ticket_offer": "TLTP Toolkit, Mid Level Offer",
-        "tltp_offers_description": "All TLTP Offers & Brief Descriptions",
-        "7_day_funded_trader_challenge": "7-day Funded Trader Challenge",
-        "faq": "Frequently Asked Questions & Answers",
-    }
+        # Product mapping with optional websites
+        product_mapping = {
+            "tltp_main_course": {
+                "name": "TLTP Main Course",
+                "website": "https://www.tradelikethepros.com/regular"
+            },
+            "trade_journal_offer": {
+                "name": "Trade Journal Offer",
+                "website": "https://www.tradelikethepros.com/trade-journal"
+            },
+            "tltp_toolkit_mid_ticket_offer": {
+                "name": "TLTP Toolkit Offer",
+                "website": "https://www.tradelikethepros.com/"
+            },
+            "tltp_offers_description": "All TLTP Offers & Brief Descriptions",  # No website
+            "7_day_funded_trader_challenge": {
+                "name": "7-day Funded Trader Challenge",
+                "website": "https://www.tradelikethepros.com/challenge"
+            },
+            "faq": "Frequently Asked Questions & Answers"  # No website
+        }
 
-    # Extract base filename (without extension) and convert to lowercase for matching
-    base_name = filename.split(".")[0].lower()
+        response = requests.get(
+            "https://api.pinecone.io/indexes", headers=headers)
 
-    # Get product name from mapping, default to None if not found (or raise error—see below)
-    product_name = product_mapping.get(base_name)
-    if product_name is None:
-        product_name = base_name.replace("_", "")
-        # raise ValueError(
-        #     f"Unknown filename '{filename}' - no matching product defined")
+        if response.status_code == 200:
+            indexes = json.loads(response.text)
+            index_names = [index['name'] for index in indexes['indexes']]
+            index_name = "agent-t"
 
-    # Log the upsert attempt
-    print(f"Upserting content from {filename} as product: {product_name}")
+            if index_name not in index_names:
+                print(f"Index '{index_name}' does not exist. Creating it now.")
+                index_data = {
+                    "name": index_name,
+                    "dimension": 1536,
+                    "metric": "cosine",
+                    "spec": {
+                        "serverless": {
+                            "cloud": "aws",
+                            "region": "us-east-1"
+                        }
+                    },
+                    "tags": {
+                        "example": "tag",
+                        "environment": "production"
+                    },
+                    "deletion_protection": "disabled"
+                }
 
-    response = requests.get("https://api.pinecone.io/indexes", headers=headers)
+                create_response = requests.post(
+                    "https://api.pinecone.io/indexes", headers=headers, data=json.dumps(index_data))
+                if create_response.status_code != 201:
+                    print(
+                        f"Failed to create index. Status code: {create_response.status_code}, Response: {create_response.text}")
+                    return
 
-    if response.status_code == 200:
-        indexes = json.loads(response.text)
-        index_names = [index['name'] for index in indexes['indexes']]
-        index_name = "agent-t"
+                # Wait for index to be ready
+                while True:
+                    try:
+                        describe_response = requests.get(
+                            f"https://api.pinecone.io/indexes/{index_name}", headers=headers)
+                        if describe_response.status_code == 200:
+                            break
+                    except Exception as ep:
+                        print("EPEPPEP", ep)
+                print(f"Index '{index_name}' created and is now ready.")
 
-        if index_name not in index_names:
-            print(f"Index '{index_name}' does not exist. Creating it now.")
-            index_data = {
-                "name": index_name,
-                "dimension": 1536,
-                "metric": "cosine",
-                "spec": {
-                    "serverless": {
-                        "cloud": "aws",
-                        "region": "us-east-1"
-                    }
-                },
-                "tags": {
-                    "example": "tag",
-                    "environment": "production"
-                },
-                "deletion_protection": "disabled"
+            index = pc.Index(index_name)
 
-            }
+            # Directories where txt files are stored
+            training_data_dir = "training_data/agent-t"
+            common_dir = "training_data/common"
+            directories = [training_data_dir, common_dir]
 
-            create_response = requests.post(
-                "https://api.pinecone.io/indexes", headers=headers, data=json.dumps(index_data))
-            if create_response.status_code != 201:
-                print(
-                    f"Failed to create index. Status code: {create_response.status_code}, Response: {create_response.text}")
-                return
+            # Iterate over each directory
+            for directory in directories:
+                if os.path.exists(directory):
+                    for filename in os.listdir(directory):
+                        if filename.endswith(".txt"):
+                            file_path = os.path.join(directory, filename)
 
-            # Wait for index to be ready. Note: This is a simplistic wait; in practice, you might want a more robust check.
-            import time
-            while True:
-                try:
-                    describe_response = requests.get(
-                        f"https://api.pinecone.io/indexes/{index_name}", headers=headers)
-                    if describe_response.status_code == 200:
-                        break
-                except Exception:
-                    time.sleep(5)  # Wait for 5 seconds before checking again
-            print(f"Index '{index_name}' created and is now ready.")
+                            with open(file_path, 'r', encoding='utf-8') as file:
+                                text = file.read().strip()
 
-        index = pc.Index(index_name)
+                                # Extract base filename (without extension)
+                                base_name = filename.split(".")[0].lower()
 
-        # Directories where txt files are stored
-        training_data_dir = "training_data/agent-t"
-        common_dir = "training_data/common"  # Adding the common directory
+                                # Get product info from mapping; default to filename without underscores
+                                product_info = product_mapping.get(base_name)
+                                if product_info is None:
+                                    product_name = base_name.replace("_", "")
+                                    metadata = {
+                                        "product": product_name,
+                                        "source": filename,
+                                        "directory": directory,
+                                    }
+                                else:
+                                    # Handle cases with dictionary vs. string
+                                    if isinstance(product_info, dict):
+                                        product_name = product_info["name"]
+                                        metadata = {
+                                            "product": product_name,
+                                            "source": filename,
+                                            "directory": directory,
+                                        }
+                                        # Only add website if it exists
+                                        if "website" in product_info:
+                                            metadata["website"] = product_info["website"]
+                                    else:
+                                        product_name = product_info
+                                        metadata = {
+                                            "product": product_name,
+                                            "source": filename,
+                                            "directory": directory,
+                                        }
 
-        # List of directories to process
-        directories = [training_data_dir, common_dir]
+                                # Chunk the text
+                                chunks = chunk_text(text)
 
-        # Iterate over each directory
-        for directory in directories:
-            # Check if directory exists to avoid errors
-            if os.path.exists(directory):
-                # Iterate over each file in the directory
-                for filename in os.listdir(directory):
-                    if filename.endswith(".txt"):
-                        file_path = os.path.join(directory, filename)
+                                for i, chunk in enumerate(chunks):
+                                    vector = get_text_embedding(chunk)
+                                    doc_id = f"{directory.split('/')[-1]}_{base_name}_{i}"
 
-                        with open(file_path, 'r', encoding='utf-8') as file:
-                            text = file.read().strip()  # Read content of the file
+                                    # Add chunk-specific fields to metadata
+                                    metadata.update({
+                                        "chunk_index": i,
+                                        "total_chunks": len(chunks),
+                                        "text": chunk
+                                    })
 
-                            # Extract base filename (without extension) for product mapping
-                            base_name = filename.split(".")[0].lower()
+                                    index.upsert(
+                                        vectors=[(doc_id, vector, metadata)], namespace="ns1")
+                                    print(
+                                        f"Upserted: {directory}/{filename}, chunk {i}, product: {product_name}, metadata: {metadata}")
 
-                            # Get product name from mapping; error if not found
-                            product_name = product_mapping.get(base_name)
-                            if product_name is None:
-                                raise ValueError(
-                                    f"Unknown filename '{filename}' in {directory} - no matching product defined")
+        else:
+            print(
+                f"Failed to fetch indexes. Status code: {response.status_code}")
 
-                            # Chunk the text
-                            chunks = chunk_text(text)
-
-                            # Upsert each chunk
-                            for i, chunk in enumerate(chunks):
-                                # Convert chunk to vector
-                                vector = get_text_embedding(chunk)
-
-                                # Create a unique ID based on directory, filename, and chunk index
-                                doc_id = f"{directory.split('/')[-1]}_{base_name}_{i}"
-
-                                # Prepare metadata with product name
-                                metadata = {
-                                    "product": product_name,
-                                    "source": filename,
-                                    "directory": directory,
-                                    "chunk_index": i,
-                                    "total_chunks": len(chunks),
-                                    "text": chunk
-                                }
-
-                                # Upsert the vector into Pinecone
-                                index.upsert(
-                                    vectors=[(doc_id, vector, metadata)], namespace="ns1")
-                                print(
-                                    f"Upserted: {directory}/{filename}, chunk {i}, product: {product_name}")
-    else:
-        print(f"Failed to fetch indexes. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error in pinecone_upsert: {str(e)}")
 
 
 if __name__ == '__main__':

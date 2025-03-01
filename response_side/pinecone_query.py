@@ -30,12 +30,15 @@ def retrieve_relevant_docs(query, index_name, top_k=5):
         # Retrieve documents with full metadata
         relevant_docs = []
         for match in sorted_results:
-            relevant_docs.append({
+            doc = {
                 'text': match.metadata['text'],
                 'product': match.metadata.get('product', 'Unknown'),
-                'score': match.score
-            })
-
+                'score': match.score,
+                'website': match.metadata['website']
+            }
+            
+            relevant_docs.append(doc)
+            
         print(
             f"Retrieved {len(relevant_docs)} relevant docs for query: '{query}'")
         return relevant_docs
