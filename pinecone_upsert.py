@@ -67,7 +67,7 @@ def pinecone_upsert():
         if response.status_code == 200:
             indexes = json.loads(response.text)
             index_names = [index['name'] for index in indexes['indexes']]
-            index_name = "agent-ta"
+            index_name = "agent-t"
 
             # If index exists, delete it to start fresh
             if index_name in index_names:

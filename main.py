@@ -50,20 +50,20 @@ async def fetch_embedding(req_body: SchemasCopy):
         query, relevant_docs, previous_user_message, previous_bot_reply)
 
     #
-    max_tries = 5
-    for attempt in range(max_tries):
-        if len(response) <= 1999:
-            break
-        response = generate_agent_t_response(
-            query, relevant_docs, previous_user_message, previous_bot_reply)
-        print(
-            f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
+    # max_tries = 5
+    # for attempt in range(max_tries):
+    #     if len(response) <= 1999:
+    #         break
+    #     response = generate_agent_t_response(
+    #         query, relevant_docs, previous_user_message, previous_bot_reply)
+    #     print(
+    #         f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
 
-    if len(response) > 1999:
-        print("Unable to generate a response shorter than 2000 characters after several attempts.")
-        # Optionally truncate the response, but this should be rare
-        response = response[:1999]
-    #
+    # if len(response) > 1999:
+    #     print("Unable to generate a response shorter than 2000 characters after several attempts.")
+    #     # Optionally truncate the response, but this should be rare
+    #     response = response[:1999]
+    # #
 
     return {'data': response}
 
@@ -83,17 +83,17 @@ async def fetch_embedding(req_body: SchemasCopy):
         query, relevant_docs, previous_user_message, previous_bot_reply)
 
     # Ensure response fits Discord's 2000-character limit
-    max_tries = 5
-    for attempt in range(max_tries):
-        if len(response) <= 1999:
-            break
-        response = generate_agent_ta_response(
-            query, relevant_docs, previous_user_message, previous_bot_reply)
-        print(
-            f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
+    # max_tries = 5
+    # for attempt in range(max_tries):
+    #     if len(response) <= 1999:
+    #         break
+    #     response = generate_agent_ta_response(
+    #         query, relevant_docs, previous_user_message, previous_bot_reply)
+    #     print(
+    #         f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
 
-    if len(response) > 1999:
-        print("Unable to shorten response below 2000 characters after attempts.")
-        response = response[:1999]
+    # if len(response) > 1999:
+    #     print("Unable to shorten response below 2000 characters after attempts.")
+    #     response = response[:1999]
 
     return {'data': response}
