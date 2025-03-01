@@ -1,5 +1,7 @@
 from openai import OpenAI
 
+from response_side.append_sites import append_sites
+
 
 def generate_response(query, relevant_docs):
     # Prepare the context by concatenating relevant documents
@@ -16,11 +18,7 @@ def generate_response(query, relevant_docs):
 
     completion = client.chat.completions.create(
         model="gpt-4o",
-        messages=[
-            {"role": "developer", "content": "You are a helpful assistant that provides answers based on given context."},
-            {"role": "user", "content": f"""Given the context:\n\n{
-                context}\n\nAnswer the following query: {query}"""}
-        ]
+        messages=messages
     )
 
     return completion.choices[0].message.content.strip()
@@ -54,9 +52,8 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
                     "You are Agent T, an expert customer service agent for the Trade Like The Pros program. "
                     "Your role is to answer students’ questions about offers, enrollment, and general program details concisely within 1999 characters for Discord, persuasively to encourage engagement, and accurately based on the customer service database. "
                     "You must remain aware of conversation history when provided and use it to maintain context. "
-                    "You do not have access to detailed course content, which is handled by Agent TLTP, a paid bot exclusive to subscribed members. "
-                    "Redirect users to Agent TLTP only if the query specifically requires detailed course content not found in the customer service database, and explain why. "
-                    "For questions about offers or products, provide precise answers from the database, using the product names (e.g., 'TLTP Toolkit, Mid Level Offer') and including the website URL (e.g., 'https://www.tradelikethepros.com/toolkit-mid-ticket') in your response if it exists in the database to offer additional resources."
+                    "For questions about offers or products, provide precise answers from the database, using the product names (e.g., 'TLTP Toolkit, Mid Level Offer')."
+                    "Whenever your response mentions a product that has a website URL in the database, you must include that website URL as plain text, formatted as 'See [URL]' (e.g., 'See https://www.tradelikethepros.com'), without any brackets or labels like '[Trade Like The Pros]'; do not omit the URL under any circumstances if it exists in the database."
                 )
             },
             {
@@ -66,7 +63,6 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
                     "The user has asked the following question, and you must prioritize past chats to ensure consistency. "
                     f"Here is the customer service database information, labeled by product and including website URLs where available, which you should use only if relevant: {context} "
                     f"Answer the current query accurately and concisely: {query} "
-                    "If the query is ambiguous based on history or database context, ask the user to clarify which product they mean (e.g., 'TLTP Toolkit, Mid Level Offer' or 'TLTP Main Course')."
                 )
             }
         ]
@@ -74,14 +70,14 @@ def generate_agent_t_response(query, relevant_docs, previous_user_message=None, 
         import logging
         print("full message payload", messages)
 
-        client = OpenAI()  # Add your API key
+        client = OpenAI()
 
         completion = client.chat.completions.create(
             model="gpt-4o",
             messages=messages
         )
 
-        return completion.choices[0].message.content.strip()
+        return append_sites(completion.choices[0].message.content.strip())
 
     except Exception as er:
         logging.error(f"Exception in generate_agent_t_response: {er}")
@@ -106,9 +102,11 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
         {
             "role": "system",
             "content": (
-                "You are Agent TLTP, an expert customer service agent for the course \"Trade Like The Pros\". "
-                "You answer students' questions concisely on Discord (under 1999 characters), persuasively, "
-                "and with awareness of the conversation history when provided."
+                "You are Agent TLTP, an expert Q&A agent for the course \"Trade Like The Pros\". "
+                "Your role is to answer students’ questions about the course curriculum concisely within 1999 characters for Discord, persuasively to encourage engagement, and accurately based on the curriculum database. "
+                "You must remain aware of conversation history when provided and use it to maintain context. "
+                "For questions about offers or products, provide precise answers from the database, using the product names (e.g., 'TLTP Toolkit, Mid Level Offer')."
+                "Whenever your response mentions a product that has a website URL in the database, you must include that website URL as plain text, formatted as 'See [URL]' (e.g., 'See https://www.tradelikethepros.com'), without any brackets or labels like '[Trade Like The Pros]'; do not omit the URL under any circumstances if it exists in the database."
             )
         },
         {
@@ -116,7 +114,8 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
             "content": (
                 f"User has asked these: {past_context}"
                 f"Prioritise and understand user's past chats. If and Only if useful, use these information from the TLTP Course:\n\n{context}\n\n"
-                f"Answer the following question in less than 1999 characters: {query}"
+                f"Here is the course curriculum database information, labeled by product and including website URLs where available, which you should use only if relevant: {context} "
+                f"Answer the current query accurately and concisely: {query} "
             )
         }
     ]
@@ -130,4 +129,4 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
         messages=messages
     )
 
-    return completion.choices[0].message.content.strip()
+    return append_sites(completion.choices[0].message.content.strip())

@@ -1,56 +1,67 @@
-import re
 import tiktoken
+import re
 
 
-def chunk_text(text, max_tokens=8000, overlap_fraction=0.5, encoding_name="cl100k_base"):
+def chunk_text(text, max_tokens=500, overlap_fraction=0.5, encoding_name="cl100k_base"):
     """
-    Split text into chunks with a maximum token limit and overlap, ensuring no chunk exceeds max_tokens.
+    Split text into chunks with a maximum token limit and overlap, handling chapters and newlines.
     """
     # Load the tokenizer
     encoding = tiktoken.get_encoding(encoding_name)
 
-    # First, split by major headers to identify chapters or large sections
-    sections = re.split(r'\nChapter \d+:|\n\n', text)
+    # Split by chapter headers first (e.g., "Chapter 1:", "Chapter 2:")
+    chapter_pattern = r'\nChapter \d+:'
+    sections = re.split(chapter_pattern, text)
+    chapter_titles = re.findall(chapter_pattern, text)
 
+    # Prepend chapter titles to their respective sections
     chunks = []
-    for i, section in enumerate(sections):
-        if i > 0:  # Skip the part before the first chapter or section
-            # Handle chapter or section title
-            if 'Chapter' in section:
-                title = section.split('\n', 1)[0]
-                chunks.append(title)
-                section = section.split('\n', 1)[1] if len(
-                    section.split('\n', 1)) > 1 else ""
-            else:
-                title = ""
+    if chapter_titles:
+        # Handle text before the first chapter (if any)
+        if sections[0].strip():
+            chunks.append(sections[0].strip())
+        # Pair titles with sections
+        for i, title in enumerate(chapter_titles):
+            section = sections[i + 1].strip()
+            if section:
+                chunks.append(f"{title.strip()}\n{section}")
+    else:
+        # No chapters, treat as one section
+        chunks = [text.strip()]
 
-            # Split into paragraphs, keeping lists and sub-sections together
-            paragraphs = re.split(r'\n\s*\n', section)
-            current_chunk = title
-            for para in paragraphs:
-                if re.match(r'^[A-Z][a-zA-Z\s]+$', para.strip()):
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                    current_chunk = para.strip()
-                elif current_chunk and (re.match(r'^\s*•\s|^\s*\d+\.\s', para.strip()) or para.strip().startswith('We')):
-                    current_chunk += '\n\n' + para.strip()
-                else:
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                    current_chunk = para.strip()
-
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-
-    # Manage chunk size by token count with overlap, working with tokens directly
+    # Further split each chunk by single newlines within sections
     refined_chunks = []
-    # e.g., 4000 if max_tokens=8000 and overlap=0.5
+    for chunk in chunks:
+        # Split by single newlines (sentences/paragraphs)
+        paragraphs = chunk.split('\n')
+        paragraphs = [p.strip() for p in paragraphs if p.strip()]
+
+        current_chunk = ""
+        for para in paragraphs:
+            para_tokens = encoding.encode(para)
+            current_chunk_tokens = encoding.encode(current_chunk)
+
+            # If adding this paragraph exceeds max_tokens, finalize current chunk
+            if len(current_chunk_tokens) + len(para_tokens) > max_tokens:
+                if current_chunk:
+                    refined_chunks.append(current_chunk.strip())
+                current_chunk = para
+            else:
+                # Add paragraph to current chunk with a newline if not first
+                current_chunk = f"{current_chunk}\n{para}" if current_chunk else para
+
+        # Append any remaining chunk
+        if current_chunk:
+            refined_chunks.append(current_chunk.strip())
+
+    # Refine chunks by token count with overlap
+    final_chunks = []
     overlap_tokens = int(max_tokens * overlap_fraction)
 
-    for chunk in chunks:
+    for chunk in refined_chunks:
         chunk_tokens = encoding.encode(chunk)
         if len(chunk_tokens) <= max_tokens:
-            refined_chunks.append(chunk)
+            final_chunks.append(chunk)
         else:
             # Split into token-based sub-chunks with overlap
             start = 0
@@ -58,38 +69,38 @@ def chunk_text(text, max_tokens=8000, overlap_fraction=0.5, encoding_name="cl100
                 end = min(start + max_tokens, len(chunk_tokens))
                 sub_chunk_tokens = chunk_tokens[start:end]
                 sub_chunk = encoding.decode(sub_chunk_tokens)
-                refined_chunks.append(sub_chunk)
-                # Move start back by overlap_tokens, but not before 0
+                final_chunks.append(sub_chunk)
                 start = max(
                     0, end - overlap_tokens) if end < len(chunk_tokens) else len(chunk_tokens)
 
     # Validate no chunk exceeds max_tokens
-    for chunk in refined_chunks:
+    for chunk in final_chunks:
         token_count = len(encoding.encode(chunk))
         if token_count > max_tokens:
             raise ValueError(
                 f"Chunk exceeds {max_tokens} tokens: {token_count} tokens found")
 
-    return refined_chunks
+    return final_chunks
 
 
-# Example usage with debugging
+# Test with a mixed-format string
 if __name__ == "__main__":
-    text = """
-    Chapter 1: Introduction
+    text = """Trade Like The Pros is committed to nurturing financial literacy.
+This is a general intro sentence.
+Here’s another one.
 
-    This is a long paragraph about something interesting. It goes on and on to test the chunking logic.
+Chapter 1: Getting Started
+Trade Like The Pros’s TLTP Trade Journal costs $60.
+It tracks your progress toward profitability.
+You can monitor live trades and habits.
 
-    • Item 1
-    • Item 2
+Chapter 2: Advanced Tools
+Trade Like The Pros’s TLTP Algo Bundle automates trading.
+It uses cutting-edge algorithms.
+Save time with data-driven trades."""
 
-    Another paragraph here with more content that might exceed limits if we let it grow too much.
-
-    Chapter 2: Next Topic
-
-    Here’s another section with text.
-    """
-    chunks = chunk_text(text, max_tokens=50, overlap_fraction=0.5)
-    for i, chunk in enumerate(chunks, 1):
+    # Small max_tokens for demonstration
+    chunks = chunk_text(text, max_tokens=100)
+    for i, chunk in enumerate(chunks):
         tokens = len(tiktoken.get_encoding("cl100k_base").encode(chunk))
         print(f"Chunk {i} ({tokens} tokens):\n{chunk}\n")

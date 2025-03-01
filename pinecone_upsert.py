@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import json
 
@@ -41,7 +42,7 @@ def pinecone_upsert():
         # Product mapping with optional websites
         product_mapping = {
             "tltp_main_course": {
-                "name": "TLTP Main Course",
+                "name": "TLTP Program",
                 "website": "https://www.tradelikethepros.com/regular"
             },
             "trade_journal_offer": {
@@ -66,49 +67,66 @@ def pinecone_upsert():
         if response.status_code == 200:
             indexes = json.loads(response.text)
             index_names = [index['name'] for index in indexes['indexes']]
-            index_name = "agent-t"
+            index_name = "agent-ta"
 
-            if index_name not in index_names:
-                print(f"Index '{index_name}' does not exist. Creating it now.")
-                index_data = {
-                    "name": index_name,
-                    "dimension": 1536,
-                    "metric": "cosine",
-                    "spec": {
-                        "serverless": {
-                            "cloud": "aws",
-                            "region": "us-east-1"
-                        }
-                    },
-                    "tags": {
-                        "example": "tag",
-                        "environment": "production"
-                    },
-                    "deletion_protection": "disabled"
-                }
-
-                create_response = requests.post(
-                    "https://api.pinecone.io/indexes", headers=headers, data=json.dumps(index_data))
-                if create_response.status_code != 201:
+            # If index exists, delete it to start fresh
+            if index_name in index_names:
+                print(
+                    f"Index '{index_name}' exists. Deleting it to start with fresh data.")
+                delete_response = requests.delete(
+                    f"https://api.pinecone.io/indexes/{index_name}", headers=headers
+                )
+                if delete_response.status_code != 202:
                     print(
-                        f"Failed to create index. Status code: {create_response.status_code}, Response: {create_response.text}")
+                        f"Failed to delete index '{index_name}'. Status code: {delete_response.status_code}, Response: {delete_response.text}")
                     return
+                print(f"Index '{index_name}' deleted successfully.")
 
-                # Wait for index to be ready
-                while True:
-                    try:
-                        describe_response = requests.get(
-                            f"https://api.pinecone.io/indexes/{index_name}", headers=headers)
-                        if describe_response.status_code == 200:
-                            break
-                    except Exception as ep:
-                        print("EPEPPEP", ep)
-                print(f"Index '{index_name}' created and is now ready.")
+                # Wait briefly to ensure deletion propagates (optional)
+                time.sleep(2)
+
+            # Create the index (either after deletion or if it didn’t exist)
+            print(f"Creating index '{index_name}'.")
+            index_data = {
+                "name": index_name,
+                "dimension": 1536,
+                "metric": "cosine",
+                "spec": {
+                    "serverless": {
+                        "cloud": "aws",
+                        "region": "us-east-1"
+                    }
+                },
+                "tags": {
+                    "example": "tag",
+                    "environment": "production"
+                },
+                "deletion_protection": "disabled"
+            }
+
+            create_response = requests.post(
+                "https://api.pinecone.io/indexes", headers=headers, data=json.dumps(index_data))
+            if create_response.status_code != 201:
+                print(
+                    f"Failed to create index. Status code: {create_response.status_code}, Response: {create_response.text}")
+                return
+
+            # Wait for index to be ready
+            while True:
+                try:
+                    describe_response = requests.get(
+                        f"https://api.pinecone.io/indexes/{index_name}", headers=headers)
+                    if describe_response.status_code == 200:
+                        break
+                except Exception as ep:
+                    print(f"Waiting for index to be ready: {ep}")
+                    time.sleep(5)
+            print(f"Index '{index_name}' created and is now ready.")
 
             index = pc.Index(index_name)
 
             # Directories where txt files are stored
-            training_data_dir = "training_data/agent-t"
+            training_data_dir = f"training_data/{index_name}"
             common_dir = "training_data/common"
             directories = [training_data_dir, common_dir]
 
@@ -116,6 +134,7 @@ def pinecone_upsert():
             for directory in directories:
                 if os.path.exists(directory):
                     for filename in os.listdir(directory):
+
                         if filename.endswith(".txt"):
                             file_path = os.path.join(directory, filename)
 
@@ -168,10 +187,14 @@ def pinecone_upsert():
                                         "text": chunk
                                     })
 
+                                    print("base aname", base_name)
+                                    if base_name == 'all_tltp_offers_and_prices':
+                                        print('the text from chunking', chunk)
+
                                     index.upsert(
                                         vectors=[(doc_id, vector, metadata)], namespace="ns1")
-                                    print(
-                                        f"Upserted: {directory}/{filename}, chunk {i}, product: {product_name}, metadata: {metadata}")
+                                    # print(
+                                    #     f"Upserted: {directory}/{filename}, chunk {i}, product: {product_name}, metadata: {metadata}")
 
         else:
             print(
