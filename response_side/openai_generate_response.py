@@ -106,6 +106,7 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
                 "Your role is to answer students’ questions about the course curriculum concisely, step by step, and accurately based on the curriculum database. "
                 "You must remain aware of conversation history when provided and use it to maintain context. "
                 "You must be able to provide the answers, and give course members the exact step by step on how to achieve their desired situation."
+                "Plese provide suitable use cases as well for each question as well, if not mentioned."
             )
         },
         {
