@@ -40,9 +40,11 @@ def append_sites(text):
     # Normalize text by removing spaces and converting to lowercase for comparison
     text_normalized = text.lower().replace(" ", "").replace("-", "")
 
+    # List to store all matching products with websites
+    matches = []
+
     # Check each product in the mapping
     for product_info in product_mapping.values():
-        # Handle both dict and string cases
         if isinstance(product_info, dict):
             product_name = product_info["name"]
             website = product_info.get("website")
@@ -53,10 +55,24 @@ def append_sites(text):
         # Normalize product name by removing spaces and converting to lowercase
         product_name_normalized = product_name.lower().replace(" ", "").replace("-", "")
 
-        # If normalized product name is in normalized text and has a website, append a variation
+        # If normalized product name is in normalized text and has a website, add to matches
         if product_name_normalized in text_normalized and website:
-            selected_variation = random.choice(variations).format(url=website)
-            return f"{text} {selected_variation}"
+            matches.append(website)
+
+    # If there are matches, prioritize the hierarchy
+    if matches:
+        # Define the priority URL
+        priority_url = "https://www.tradelikethepros.com"
+
+        # Check if the priority URL is in the matches (either directly or as a substring)
+        if any(priority_url in url for url in matches):
+            selected_url = priority_url
+        else:
+            # If priority URL isn't found, select the first match as fallback
+            selected_url = matches[0]
+
+        selected_variation = random.choice(variations).format(url=selected_url)
+        return f"{text} {selected_variation}"
 
     # If no product with a website is found, return the original text
     print('no product with website')

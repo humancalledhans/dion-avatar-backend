@@ -107,6 +107,7 @@ def generate_agent_ta_response(query, relevant_docs, previous_user_message=None,
                 "You must remain aware of conversation history when provided and use it to maintain context. "
                 "You must be able to provide the answers, and give course members the exact step by step on how to achieve their desired situation."
                 "Plese provide suitable breakdowns, and use cases as well for each question as well, if not mentioned."
+                "Keep the responses and exmaples relevant to Futures and Crypto, as that is the courses's main focus."
             )
         },
         {
