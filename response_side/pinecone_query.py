@@ -6,7 +6,7 @@ from pinecone_upsert import get_text_embedding
 PINECONE_API_KEY = "pcsk_6jqwp5_BLPY9FFhok3LcbUWMWpkjBouoobnRDgwn1KWLcwi1ncXiv1XSrTsWxBtpuvWd27"
 
 
-def retrieve_relevant_docs(query, index_name, top_k=10, max_per_product=3):
+def retrieve_relevant_docs(query, index_name, top_k=35, max_per_product=6):
     try:
         # Initialize Pinecone
         pc = Pinecone(api_key=PINECONE_API_KEY)
