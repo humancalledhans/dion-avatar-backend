@@ -199,8 +199,8 @@ def generate_agent_q_response(query, previous_user_message=None, previous_bot_re
     # Prepare the context from relevant documents
     # context = "\n\n".join([doc['text'] for doc in relevant_docs])
 
-    user_preferences = input(
-        "Please state your analysis preferences (Quantitative, Analytical, Fundamental)")
+    # user_preferences = input(
+    #     "Please state your analysis preferences (Quantitative, Analytical, Fundamental)")
 
     params = {'arguments': None}
     while params.get('arguments') is None or params.get('arguments').get('ticker', None) is None:
@@ -228,7 +228,7 @@ def generate_agent_q_response(query, previous_user_message=None, previous_bot_re
     #     data += str(yahoo_context)
 
     analysed_approach = get_suitable_approach(
-        f"The user's preferences are {user_preferences}" + query + "\n These are the past user replies. Please use the information appropriately.", data)
+        query + "\n These are the past user replies. Please use the information appropriately.", data)
 
     return analysed_approach
 
