@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from response_side.openai_generate_response import generate_agent_t_response, generate_agent_ta_response, generate_response
+from response_side.openai_generate_response import generate_agent_q_response, generate_agent_t_response, generate_agent_ta_response, generate_response
 from response_side.pinecone_query import retrieve_relevant_docs
 from scehema import SchemasCopy
 
@@ -81,6 +81,38 @@ async def fetch_embedding(req_body: SchemasCopy):
 
     response = generate_agent_ta_response(
         query, relevant_docs, previous_user_message, previous_bot_reply)
+
+    # Ensure response fits Discord's 2000-character limit
+    # max_tries = 5
+    # for attempt in range(max_tries):
+    #     if len(response) <= 1999:
+    #         break
+    #     response = generate_agent_ta_response(
+    #         query, relevant_docs, previous_user_message, previous_bot_reply)
+    #     print(
+    #         f'Attempt {attempt + 1} to shorten response. Current length: {len(response)}')
+
+    # if len(response) > 1999:
+    #     print("Unable to shorten response below 2000 characters after attempts.")
+    #     response = response[:1999]
+
+    return {'data': response}
+
+
+@app.post("/fetch_agent_q_output")
+async def fetch_embedding(req_body: SchemasCopy):
+    query = req_body.user_input
+    previous_user_message = req_body.previous_user_message
+    previous_bot_reply = req_body.previous_bot_reply
+
+    # relevant_docs = retrieve_relevant_docs(
+    #     query, index_name="agent-ta", top_k=3, max_per_product=1)
+
+    # if not relevant_docs:
+    #     return "No relevant documents found to answer this query."
+
+    response = generate_agent_q_response(
+        query, previous_user_message, previous_bot_reply, poppy=True)
 
     # Ensure response fits Discord's 2000-character limit
     # max_tries = 5
