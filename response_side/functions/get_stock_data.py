@@ -3,8 +3,8 @@ from fastapi import HTTPException
 from datetime import datetime, timedelta
 import yfinance as yf
 
-# from response_side.functions.get_yahoo_finance import get_yahoo_finance
-from functions.get_yahoo_finance import get_yahoo_finance
+from response_side.functions.get_yahoo_finance import get_yahoo_finance
+# from functions.get_yahoo_finance import get_yahoo_finance
 
 
 def get_stock_data(ticker: str, days: Optional[int] = 30):
