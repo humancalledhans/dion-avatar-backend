@@ -114,6 +114,13 @@ async def fetch_embedding(req_body: SchemasCopy):
     response = generate_agent_q_response(
         query, previous_user_message, previous_bot_reply, poppy=True)
 
+    if type(response) == dict:
+        print("RESPOnse 395", response)
+        response = response['result']['ai_reply']
+
+    else:
+        print("RESponse NOT dict", response)
+
     # Ensure response fits Discord's 2000-character limit
     # max_tries = 5
     # for attempt in range(max_tries):
