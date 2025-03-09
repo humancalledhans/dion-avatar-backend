@@ -98,9 +98,10 @@ def extract_yahoo_finance_params(sentence: str) -> Dict:
 
     print("params 3995", params)
     # Only include parameters that have values
-    if params["ticker"]:
+    if params.get("ticker", None) is not None:
         function_call["arguments"]["ticker"] = params["ticker"]
-    if params["days"] != 30:  # Only include days if different from default
+    # Only include days if different from default
+    if params.get('days', None) != 30 and params.get('days', None) is not None:
         function_call["arguments"]["days"] = params["days"]
 
     return {
