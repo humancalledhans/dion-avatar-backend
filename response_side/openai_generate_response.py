@@ -214,6 +214,8 @@ def generate_agent_q_response(query, previous_user_message=None, previous_bot_re
     print("PARAMS AGENT Q", params)
     print("PARAMS AGENT Q 337726", params["arguments"])
 
+    print('veri previous user mes', previous_user_message)
+
     # add yahoo finance context.
     # yahoo_context = get_yahoo_finance(
     #     params["arguments"]["ticker"])
@@ -228,7 +230,7 @@ def generate_agent_q_response(query, previous_user_message=None, previous_bot_re
     #     data += str(yahoo_context)
 
     analysed_approach = get_suitable_approach(
-        query + f"\n Below are the past user replies:" + "\n{previous_user_message}" + "Please use the information appropriately.", data)
+        query + "\n Below are the past user replies:" + f"\n{previous_user_message}" + "Please use the information appropriately.", data)
 
     return analysed_approach
 
