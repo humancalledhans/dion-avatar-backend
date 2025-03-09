@@ -9,6 +9,7 @@ from response_side.agents.agent_b import get_agent_b_response
 from response_side.agents.agent_e import get_agent_e_response
 from response_side.agents.agent_j import get_agent_j_response
 from response_side.agents.agent_k import get_agent_k_response
+from response_side.agents.general import get_general_response
 from response_side.functions.generate_stock_chart import generate_stock_chart
 from response_side.functions.get_stock_data import get_stock_data
 
@@ -319,7 +320,6 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
                 #     width = args.get("width", 500)
                 #     result = generate_stock_chart(ticker, height, width)
 
-
                 else:
                     result = {"error": f"Unknown function: {func_name}"}
 
@@ -343,7 +343,9 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
         # If no function call, return GPT's text response
         return {
             "status": "text_response",
-            "content": message.content.strip() if message.content else "No response provided."
+            # "content": message.content.strip() if message.content else "No response provided." # gpt's text response
+            # gpt's text response
+            "content": get_general_response(query) if message.content else "No response provided."
         }
 
     except json.JSONDecodeError as e:
