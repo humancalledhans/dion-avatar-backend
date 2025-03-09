@@ -96,6 +96,7 @@ def extract_yahoo_finance_params(sentence: str) -> Dict:
         "arguments": {}
     }
 
+    print("params 3995", params)
     # Only include parameters that have values
     if params["ticker"]:
         function_call["arguments"]["ticker"] = params["ticker"]
