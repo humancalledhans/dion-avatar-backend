@@ -228,7 +228,7 @@ def generate_agent_q_response(query, previous_user_message=None, previous_bot_re
     #     data += str(yahoo_context)
 
     analysed_approach = get_suitable_approach(
-        query + "\n These are the past user replies. Please use the information appropriately.", data)
+        query + "\n Below are the past user replies." + "\nprevious_user_message" + "Please use the information appropriately.", data)
 
     return analysed_approach
 
