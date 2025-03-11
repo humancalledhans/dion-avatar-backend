@@ -116,6 +116,7 @@ async def fetch_embedding(req_body: SchemasCopy):
 
     if type(response) == dict:
         print("RESPOnse 395", response)
+
         if response['status'] == 'text_response':
             response = response['content']
         else:

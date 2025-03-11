@@ -15,4 +15,7 @@ def get_general_response(prompt):
 
     print("CHECK OUT RESPONSE !!", response.json())
 
-    return response.json()['ai_reply']
+    try:
+        return response.json()['ai_reply']
+    except KeyError:
+        return response.json()['text']
