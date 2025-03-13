@@ -145,7 +145,10 @@ async def fetch_embedding(req_body: SchemasCopy):
                 response = results[-1]['result']['text']
 
             except KeyError:
-                response = response['result']
+                if isinstance(response, dict) and 'result' in response and isinstance(response['result'], dict) and 'text' in response['result']:
+                    response = response['result']['text']
+                else:
+                    response = response['result']
 
         elif response['status'] == 'question':
             response = response['result']
