@@ -347,10 +347,10 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
                 func_name = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
 
-                if len(results) > 0:
+                # Initialize the results string
+                results_from_past_tools = ""
 
-                    # Initialize the results string
-                    results_from_past_tools = ""
+                if len(results) > 0:
 
                     # Process the entire list once
                     results_from_past_tools += extract_results_from_past_tool_calls(
