@@ -10,8 +10,11 @@ from response_side.agents.agent_e import get_agent_e_response
 from response_side.agents.agent_j import get_agent_j_response
 from response_side.agents.agent_k import get_agent_k_response
 from response_side.agents.general import get_general_response
+from response_side.functions.extract_results_from_past_tool_calls import extract_results_from_past_tool_calls
 from response_side.functions.generate_stock_chart import generate_stock_chart
 from response_side.functions.get_stock_data import get_stock_data
+from response_side.functions.get_yahoo_finance import get_yahoo_finance
+from response_side.functions.validate_tool_call_sequence import validate_tool_call_sequence
 
 # from agents.agent_a import get_agent_a_response
 # from agents.agent_b import get_agent_b_response
@@ -25,29 +28,29 @@ from response_side.functions.get_stock_data import get_stock_data
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 tools = [
-    # {
-    #     "type": "function",
-    #     "function": {
-    #         "name": "get_stock_data",
-    #         "description": "Fetch stock price and historical data for a given ticker symbol from Yahoo Finance.",
-    #         "parameters": {
-    #             "type": "object",
-    #             "properties": {
-    #                 "ticker": {
-    #                     "type": "string",
-    #                     "description": "The stock ticker symbol (e.g., AAPL for Apple)"
-    #                 },
-    #                 "days": {
-    #                     "type": "integer",
-    #                     "description": "Number of days of historical data to fetch (default: 30)",
-    #                     "default": 30
-    #                 }
-    #             },
-    #             "required": ["ticker"],
-    #             "additionalProperties": False
-    #         }
-    #     }
-    # },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_yahoo_finance",
+            "description": "Fetch stock price and historical data for a given ticker symbol from Yahoo Finance.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticker": {
+                        "type": "string",
+                        "description": "The official stock ticker symbol (e.g., AAPL for Apple)"
+                    },
+                    "days": {
+                        "type": "integer",
+                        "description": "Number of days of historical data to fetch (default: 30)",
+                        "default": 30
+                    }
+                },
+                "required": ["ticker", "days"],
+                "additionalProperties": False
+            }
+        }
+    },
     # {
     #     "type": "function",
     #     "function": {
@@ -76,6 +79,24 @@ tools = [
     #         }
     #     }
     # }
+    {
+        "type": "function",
+        "function": {
+            "name": "get_general_response",
+            "description": "Taps into our custom knowledge base to respond to a query, without needing an agent.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "description": "The exact query to ask our custom knowledge GPT."
+                        },
+                },
+                "required": ["prompt"],
+                "additionalProperties": False
+            }
+        },
+    },
     {
         "type": "function",
         "function": {
@@ -191,7 +212,7 @@ tools = [
 # Main function to call GPT and handle function calling
 
 
-def get_suitable_approach(query: str, data_from_source: str) -> dict:
+def get_suitable_approach(query: str, relevant_data: str) -> dict:
     """
     Call GPT with a query and decide if a function should be called.
 
@@ -204,6 +225,7 @@ def get_suitable_approach(query: str, data_from_source: str) -> dict:
     try:
         # Send query to GPT with function calling enabled
         response = client.chat.completions.create(
+            # model="gpt-4.5-preview",  # Ensure this model supports function calling
             model="gpt-4o",  # Ensure this model supports function calling
             messages=[
                 {
@@ -215,6 +237,8 @@ Your decision frameworks are:
 1. Analyze query domain, complexity, and intent
 2. Determine if general knowledge is sufficient or specialized expertise is needed
 3. Route to the most appropriate agent or provide direct response
+4. If the user is asking for an analysis, you MUST perform an analysis using one of the agents below. After getting relevant data, use an agent's analysis, based on a user's preferences.
+5. Except for when you ask the user a question, the entire route must end with an analysis from an Agent.
 
 Important:
 - The user must specify their preference, to either be "Fundamental Analysis", "Quantitative Analysis" or "Technical Analysis". Note that although Quantitative Analysis is a type of Technical Analysis, not all technical analysis fall under quantitative analysis. 
@@ -226,12 +250,23 @@ Important:
 
 Routing Options:
 
-Direct Response (No Agent)
+Ask Question to User
+- To Clarify prefered approach. (Fundamental Analysis, Quantitative Analysis, or Technical Analysis)
+- Does not need to end with an Agent. Get direct answer from user.
 
+Direct Response (No Agent)
 - General knowledge finance questions
 - Basic financial concept explanations
 - Simple factual queries
 - Clarification requests
+
+get_general_response: Taps into knowledge base of the world to respond to a query, without needing an agent.
+
+get_yahoo_finance: Gets historical transaction data for a given stock, from Yahoo Finance.
+- Stock price tracking and historical data requests  
+- Financial trend analysis queries  
+- Investment performance evaluation needs  
+- Obtain data for backtesting
 
 get_agent_j_response: Jim Simons Quantitative Trading Master
 - Sophisticated quant trading strategy questions
@@ -271,7 +306,7 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
 """
                 },
                 {"role": "user", "content": query +
-                    f". Use the data obtained from finance departments here: {data_from_source}"}
+                    f". Use these relevant data from our database here: {relevant_data}"}
             ],
             tools=tools,  # Assumes tools list includes both get_stock_data and generate_stock_chart
             tool_choice="auto"  # Let GPT decide whether to call a function
@@ -280,39 +315,92 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
         # Extract the first message from the response
         message = response.choices[0].message
 
+        print('root message from gpt tool calls', message.tool_calls)
+
+        if message.tool_calls is None:
+            print("message tool calls 5229", message)
+            return {"status": "question", "result": message.content}
+
+        if not validate_tool_call_sequence(message.tool_calls):
+
+            return get_suitable_approach(query, relevant_data)
+
+        print('root message from gpt', message)
+        print('root message from gpt tool calls', message.tool_calls)
+        print('root message from gpt tool calls is None',
+              message.tool_calls is None)
+        print('root message from gpt tool calls is None',
+              type(message.tool_calls))
+
+        print("VALIDATE TOOL 33920",
+              validate_tool_call_sequence(message.tool_calls))
+
+        print("NAME 3992", message.tool_calls[0].function.name)
+
         # Check if GPT wants to call a function
-        if message.tool_calls:
+        if message.tool_calls and message.tool_calls is not None:
             results = []
             # Handle multiple tool calls (though rare)
             for tool_call in message.tool_calls:
+                print('tool call called once')
                 func_name = tool_call.function.name
                 args = json.loads(tool_call.function.arguments)
 
+                if len(results) > 0:
+
+                    # Initialize the results string
+                    results_from_past_tools = ""
+
+                    # Process the entire list once
+                    results_from_past_tools += extract_results_from_past_tool_calls(
+                        results)
+
                 # Execute the appropriate function
-                if func_name == "get_agent_a_response":
+
+                if func_name == "get_general_response":
+                    prompt = args.get("prompt")
+                    result = get_general_response(prompt)
+
+                    print('result from get gen response', result)
+
+                elif func_name == "get_agent_a_response":
                     prompt = args.get("prompt")
                     data = args.get("data")
-                    result = get_agent_a_response(prompt, data)
+                    result = get_agent_a_response(
+                        prompt, data, results_from_past_tools)
 
                 elif func_name == "get_agent_j_response":
                     prompt = args.get("prompt")
                     data = args.get("data")
-                    result = get_agent_j_response(prompt, data)
+                    result = get_agent_j_response(
+                        prompt, data, results_from_past_tools)
 
                 elif func_name == "get_agent_b_response":
                     prompt = args.get("prompt")
                     data = args.get("data")
-                    result = get_agent_b_response(prompt, data)
+
+                    result = get_agent_b_response(
+                        prompt, data, results_from_past_tools)
 
                 elif func_name == "get_agent_e_response":
                     prompt = args.get("prompt")
                     data = args.get("data")
-                    result = get_agent_e_response(prompt, data)
+                    result = get_agent_e_response(
+                        prompt, data, results_from_past_tools)
 
                 elif func_name == "get_agent_k_response":
                     prompt = args.get("prompt")
                     data = args.get("data")
-                    result = get_agent_k_response(prompt, data)
+                    result = get_agent_k_response(
+                        prompt, data, results_from_past_tools)
+
+                elif func_name == "get_yahoo_finance":
+
+                    print('check uot the args 33921', args)
+                    ticker = args.get('ticker')
+                    days = args.get('days')
+
+                    result = get_yahoo_finance(ticker=ticker, days=days)
 
                 # elif func_name == "generate_stock_chart":
                 #     ticker = args.get("ticker")
@@ -321,7 +409,11 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
                 #     result = generate_stock_chart(ticker, height, width)
 
                 else:
+                    print('how come here.')
                     result = {"error": f"Unknown function: {func_name}"}
+
+                # print('for each tool call we get this: ', result)
+                # input('for each tool call we get this: ')
 
                 results.append({
                     "function": func_name,
@@ -330,11 +422,13 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
 
             # If single function call, return it directly; otherwise, return list
             if len(results) == 1:
+
                 return {
                     "status": "function_called",
                     "function": results[0]["function"],
                     "result": results[0]["result"]
                 }
+
             return {
                 "status": "function_called",
                 "results": results
@@ -343,9 +437,10 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
         # If no function call, return GPT's text response
         return {
             "status": "text_response",
-            # "content": message.content.strip() if message.content else "No response provided." # gpt's text response
             # gpt's text response
-            "content": get_general_response(query) if message.content else "No response provided."
+            "content": message.content.strip() if message.content else "No response provided."
+            # gpt's text response
+            # "content": get_general_response(query) if message.content else "No response provided."
         }
 
     except json.JSONDecodeError as e:

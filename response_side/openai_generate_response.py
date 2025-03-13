@@ -195,42 +195,15 @@ def call_poppy(prompt):
         return None
 
 
-def generate_agent_q_response(query, previous_user_message=None, previous_bot_reply=None, poppy=None):
+def generate_agent_q_response(query, relevant_data, previous_user_message=None, previous_bot_reply=None, poppy=None):
     # Prepare the context from relevant documents
     # context = "\n\n".join([doc['text'] for doc in relevant_docs])
 
     # user_preferences = input(
     #     "Please state your analysis preferences (Quantitative, Analytical, Fundamental)")
 
-    params = {'arguments': None}
-    while params.get('arguments') is None or params.get('arguments').get('ticker', None) is None:
-        params['arguments'] = extract_yahoo_finance_params(
-            query).get('function_call').get('arguments')
-        print("type params", type(params))
-        print("params check it out 559", params)
-
-    data = ""
-
-    print("PARAMS AGENT Q", params)
-    print("PARAMS AGENT Q 337726", params["arguments"])
-
-    print('veri previous user mes', previous_user_message)
-
-    # add yahoo finance context.
-    # yahoo_context = get_yahoo_finance(
-    #     params["arguments"]["ticker"])
-
-    # if yahoo_context is None:
-    #     yahoo_context = get_yahoo_finance(
-    #         params["arguments"]["ticker"])
-
-    # print('check out yahoo context', yahoo_context)
-
-    # if yahoo_context != '':
-    #     data += str(yahoo_context)
-
     analysed_approach = get_suitable_approach(
-        query + "\n Below are the past user replies:" + f"\n{previous_user_message}" + "Please use the information appropriately.", data)
+        query + "\n Below are the past user replies:" + f"\n{previous_user_message}" + "Please use the information appropriately.", relevant_data)
 
     return analysed_approach
 

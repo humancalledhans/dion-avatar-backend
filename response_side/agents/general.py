@@ -4,7 +4,8 @@ import urllib.parse
 
 def get_general_response(prompt):
 
-    print('agent Jim Simons')
+    print("299301 prompt", prompt)
+
     encoded_prompt = urllib.parse.quote(prompt)
 
     print('encoded prompt 22', encoded_prompt)

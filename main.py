@@ -111,14 +111,45 @@ async def fetch_embedding(req_body: SchemasCopy):
     # if not relevant_docs:
     #     return "No relevant documents found to answer this query."
 
+    relevant_docs = ''
+
     response = generate_agent_q_response(
-        query, previous_user_message, previous_bot_reply, poppy=True)
+        query, relevant_docs, previous_user_message, previous_bot_reply, poppy=True)
 
     if type(response) == dict:
         print("RESPOnse 395", response)
 
         if response['status'] == 'text_response':
             response = response['content']
+
+        elif response['status'] == 'function_called':
+
+            print("check returned data", response)
+            # returned data would be in this form:
+            """
+            {'status': 'function_called', 'results': 
+                [
+                    {'function': 'get_yahoo_finance', 'result': {<result here>}},
+                    {'function': 'get_agent_b_response', 'result': {<result here>}}
+                ]
+            }
+
+            note that agent responses are usually like:
+            {'text': '', 'cost': 1.4634}
+            """
+            try:
+                results = response['results']
+
+                # assuming that the final function call will always be an agent call, which returns poppy text, in poppy format.
+                print("resutlts ", results[-1])
+                response = results[-1]['result']['text']
+
+            except KeyError:
+                response = response['result']
+
+        elif response['status'] == 'question':
+            response = response['result']
+
         else:
             response = response['result']['ai_reply']
 
