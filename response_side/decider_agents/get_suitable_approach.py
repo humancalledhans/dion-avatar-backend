@@ -7,6 +7,7 @@ import json
 from response_side.agents.agent_a import get_agent_a_response
 from response_side.agents.agent_b import get_agent_b_response
 from response_side.agents.agent_e import get_agent_e_response
+from response_side.agents.agent_h import get_agent_h_response
 from response_side.agents.agent_j import get_agent_j_response
 from response_side.agents.agent_k import get_agent_k_response
 from response_side.agents.general import get_general_response
@@ -392,6 +393,12 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
                     prompt = args.get("prompt")
                     data = args.get("data")
                     result = get_agent_k_response(
+                        prompt, data, results_from_past_tools)
+
+                elif func_name == "get_agent_h_response":
+                    prompt = args.get("prompt")
+                    data = args.get("data")
+                    result = get_agent_h_response(
                         prompt, data, results_from_past_tools)
 
                 elif func_name == "get_yahoo_finance":
