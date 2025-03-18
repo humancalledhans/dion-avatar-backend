@@ -11,7 +11,7 @@ from response_side.agents.agent_s import get_agent_s_response
 def run_intraday_backtest_vectorbt(
     symbol: str,
     days_back: int = 1,
-    interval: str = "1m",
+    interval: str = "5m",
     initial_cash: float = 10000.0,
     short_window: int = 5,
     long_window: int = 20
@@ -29,11 +29,11 @@ def run_intraday_backtest_vectorbt(
         print("long window 3992", long_window)
 
         if interval is None:
-            interval = '1m'
+            interval = '5m'
 
         if initial_cash is None:
             initial_cash = 10000.0
-        
+
         if short_window is None:
             short_window = 5
 
