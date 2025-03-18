@@ -11,6 +11,7 @@ from response_side.agents.agent_h import get_agent_h_response
 from response_side.agents.agent_j import get_agent_j_response
 from response_side.agents.agent_k import get_agent_k_response
 from response_side.agents.general import get_general_response
+from response_side.functions.basic_backtesting import run_intraday_backtest_vectorbt
 from response_side.functions.extract_results_from_past_tool_calls import extract_results_from_past_tool_calls
 from response_side.functions.generate_stock_chart import generate_stock_chart
 from response_side.functions.get_stock_data import get_stock_data
@@ -27,6 +28,16 @@ from response_side.functions.validate_tool_call_sequence import validate_tool_ca
 
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+current_date_time = datetime.now()
+month = current_date_time.month    # e.g., 3
+day = current_date_time.day        # e.g., 16
+year = current_date_time.year      # e.g., 2025
+hour = current_date_time.hour      # e.g., 14 (in 24-hour format)
+minute = current_date_time.minute  # e.g., 30
+
+current_date_time_formatted = f"{month}/{day}/{year} {hour}:{minute}"
 
 tools = [
     {
@@ -207,6 +218,47 @@ tools = [
                 "additionalProperties": False
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_intraday_backtest_vectorbt",
+            "description": "Run an intraday backtest using vectorBT with SMA strategy.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "The stock ticker symbol to backtest (e.g., 'AAPL' for Apple Inc.)"
+                    },
+                    "days_back": {
+                        "type": "integer",
+                        "description": f"Number of days of historical data to fetch, counting back from today. Today's date is {current_date_time_formatted}",
+                    },
+                    "interval": {
+                        "type": "string",
+                        "description": "The time interval between data points for intraday data. Supported values: '1m', '5m', '15m', '30m', '1h'."
+                    },
+                    "initial_cash": {
+                        "type": "number",
+                        "default": 10000.0,
+                        "description": "The starting capital for the backtest, in USD."
+                    },
+                    "short_window": {
+                        "type": "integer",
+                        "default": 5,
+                        "description": "The window size (in periods) for the short-term moving average."
+                    },
+                    "long_window": {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "The window size (in periods) for the long-term moving average."
+                    }
+                },
+                "required": ["symbol"]
+
+            }
+        }
     }
 ]
 
@@ -242,7 +294,7 @@ Your decision frameworks are:
 5. Except for when you ask the user a question, the entire route must end with an analysis from an Agent.
 
 Important:
-- The user must specify their preference, to either be "Fundamental Analysis", "Quantitative Analysis" or "Technical Analysis". Note that although Quantitative Analysis is a type of Technical Analysis, not all technical analysis fall under quantitative analysis. 
+- The user must specify their preference, to either be "Fundamental Analysis", "Quantitative Analysis" or "Technical Analysis". Note that although Quantitative Analysis is a type of Technical Analysis, not all technical analysis fall under quantitative analysis.
 - Look out for any mention aobut the notable investors listed below, or any indication of preference. If you are not able to accurately predict the user's analysis preferences (a confidence of over 80%), and it is not specified in the past chats, return pure text so that user can reply it for use in the future.
 - Ensure conversations are both professional and approachable, avoiding overly complex jargon unless specifically requested by the user.
 - The agent should never give explicit financial advice (e.g., \"buy\" or \"sell\" recommendations) BUT CAN GIVE DATA DRIVEN, RESEARCHED BACKED PROBABILITIES OF SUCCESS BASED ON THE PERFORMANCE SHOWN FROM THE RESEARCHED DATA.
@@ -264,9 +316,9 @@ Direct Response (No Agent)
 get_general_response: Taps into knowledge base of the world to respond to a query, without needing an agent.
 
 get_yahoo_finance: Gets historical transaction data for a given stock, from Yahoo Finance.
-- Stock price tracking and historical data requests  
-- Financial trend analysis queries  
-- Investment performance evaluation needs  
+- Stock price tracking and historical data requests
+- Financial trend analysis queries
+- Investment performance evaluation needs
 - Obtain data for backtesting
 
 get_agent_j_response: Jim Simons Quantitative Trading Master
@@ -304,6 +356,10 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
 - Historical data analysis questions
 - Backtesting methodology inquiries
 - Performance analysis requests
+
+run_intraday_backtest_vectorbt: Run an intraday backtest using vectorBT with a Simple Moving Average (SMA) crossover strategy
+- Intraday backtest using vectorBT
+
 """
                 },
                 {"role": "user", "content": query +
@@ -409,6 +465,27 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
 
                     result = get_yahoo_finance(ticker=ticker, days=days)
 
+                elif func_name == "run_intraday_backtest_vectorbt":
+
+                    print('check uot the args run_intraday_backtest_vectorbt', args)
+                    symbol = args.get('symbol')
+                    days_back = args.get('days_back')
+                    interval = args.get('interval')
+                    initial_cash = args.get('initial_cash')
+                    short_window = args.get('short_window')
+                    long_window = args.get('long_window')
+
+                    days = args.get('days')
+
+                    result = run_intraday_backtest_vectorbt(
+                        symbol=symbol,
+                        days_back=days_back,
+                        interval=interval,
+                        initial_cash=initial_cash,
+                        short_window=short_window,
+                        long_window=long_window,
+                    )
+
                 # elif func_name == "generate_stock_chart":
                 #     ticker = args.get("ticker")
                 #     height = args.get("height", 300)
@@ -472,7 +549,7 @@ Use the **GetChart** tool for technical analysis when a ticker is provided. NEED
 - Ensure conversations are both professional and approachable, avoiding overly complex jargon unless specifically requested by the user.
 - The agent should never give explicit financial advice (e.g., \"buy\" or \"sell\" recommendations) BUT CAN GIVE DATA DRIVEN, RESEARCHED BACKED PROBABILITIES OF SUCCESS BASED ON THE PERFORMANCE SHOWN FROM THE RESEARCHED DATA.
 
-## Instructions  
+## Instructions
 1. Greet the user in a friendly and professional manner.
 2. Engage in a conversational tone while discussing financial related topics.
 3. If the user provides a ticker and requests technical analysis:
