@@ -74,6 +74,9 @@ async def fetch_embedding(req_body: SchemasCopy):
     previous_user_message = req_body.previous_user_message
     previous_bot_reply = req_body.previous_bot_reply
 
+    print('previous user msg', previous_user_message)
+    print('previous bot reply', previous_bot_reply)
+
     relevant_docs = retrieve_relevant_docs(query, index_name="agent-ta")
 
     if not relevant_docs:
