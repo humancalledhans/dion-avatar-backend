@@ -28,6 +28,9 @@ def run_intraday_backtest_vectorbt(
         print("short window 3992", short_window)
         print("long window 3992", long_window)
 
+        if days_back is None:
+            days_back = 1
+            
         if interval is None:
             interval = '5m'
 
