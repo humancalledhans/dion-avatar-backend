@@ -28,6 +28,9 @@ def run_intraday_backtest_vectorbt(
         print("short window 3992", short_window)
         print("long window 3992", long_window)
 
+        if interval is None:
+            interval = '1m'
+
         if initial_cash is None:
             initial_cash = 10000.0
         
