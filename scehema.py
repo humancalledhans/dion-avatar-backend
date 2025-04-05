@@ -9,3 +9,7 @@ class SchemasCopy(BaseModel):
 
 class AnalyseBody(BaseModel):
     schema: str
+
+
+class TokenRequest(BaseModel):
+    user_id: str

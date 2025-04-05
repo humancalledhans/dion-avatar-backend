@@ -1,9 +1,13 @@
+import uuid
+import time
+import os
+import jwt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from response_side.openai_generate_response import generate_agent_q_response, generate_agent_t_response, generate_agent_ta_response, generate_response
 from response_side.pinecone_query import retrieve_relevant_docs
-from scehema import SchemasCopy
+from scehema import SchemasCopy, TokenRequest
 
 app = FastAPI()
 
@@ -16,10 +20,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+HMS_APP_ACCESS_KEY = os.getenv("HMS_APP_ACCESS_KEY")
+HMS_APP_SECRET = os.getenv("HMS_APP_SECRET")
+HMS_ROOM_ID = os.getenv("HMS_ROOM_ID")
+
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+
+
+@app.post("/generate-100ms-token")
+async def generate_token(request: TokenRequest):
+    payload = {
+        "access_key": HMS_APP_ACCESS_KEY,
+        "room_id": HMS_ROOM_ID,  # Use the Room ID here
+        "user_id": request.user_id,
+        "role": "viewer-realtime",
+        "iat": int(time.time()),
+        "exp": int(time.time()) + 3600,
+        "jti": str(uuid.uuid4())
+    }
+
+    print("CHECK OUT PAYLOAD FIRSt", payload)
+    print("HMS_APP_SECRET", HMS_APP_SECRET)
+    token = jwt.encode(payload, HMS_APP_SECRET, algorithm="HS256")
+
+    print("CHECK OUT TOKEN 668", token)
+
+    return {"token": token, "room_id": HMS_ROOM_ID}
 
 
 @app.post("/fetch_embedding_output")
