@@ -22,7 +22,10 @@ app.add_middleware(
 
 HMS_APP_ACCESS_KEY = os.getenv("HMS_APP_ACCESS_KEY")
 HMS_APP_SECRET = os.getenv("HMS_APP_SECRET")
-HMS_ROOM_ID = os.getenv("HMS_ROOM_ID")
+# HMS_ROOM_ID = os.getenv("HMS_ROOM_ID")
+HMS_ROOM_ID = "67f5ea1902936b386a840d9e"
+
+AVAILABLE_ROLES = ['host', 'guest']
 
 
 @app.get("/")
@@ -36,7 +39,7 @@ async def generate_token(request: TokenRequest):
         "access_key": HMS_APP_ACCESS_KEY,
         "room_id": HMS_ROOM_ID,  # Use the Room ID here
         "user_id": request.user_id,
-        "role": "viewer-realtime",
+        "role": "guest",
         "iat": int(time.time()),
         "exp": int(time.time()) + 3600,
         "jti": str(uuid.uuid4())
