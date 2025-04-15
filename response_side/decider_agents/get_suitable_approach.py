@@ -11,7 +11,10 @@ from response_side.agents.agent_h import get_agent_h_response
 from response_side.agents.agent_j import get_agent_j_response
 from response_side.agents.agent_k import get_agent_k_response
 from response_side.agents.general import get_general_response
-from response_side.functions.basic_backtesting import run_intraday_backtest_vectorbt
+from response_side.functions.backtesting_algos.basic_backtesting import run_intraday_backtest_vectorbt
+from response_side.functions.backtesting_algos.momentum_factor import momentum_score
+from response_side.functions.backtesting_algos.sharpe_ratio import sharpe_ratio
+from response_side.functions.backtesting_algos.volatility_score import volatility_score
 from response_side.functions.extract_results_from_past_tool_calls import extract_results_from_past_tool_calls
 from response_side.functions.generate_stock_chart import generate_stock_chart
 from response_side.functions.get_stock_data import get_stock_data
@@ -259,7 +262,104 @@ tools = [
 
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "momentum_score",
+            "description": "Calculates a momentum score for a financial asset by fetching historical price data from Yahoo Finance using yfinance and computing the score with NumPy, reflecting the strength of its recent price trend under Quantitative Analysis. The score is normalized to [-1, 1], where positive scores indicate upward momentum, negative scores suggest downward momentum, and near-zero scores imply no trend. Returns an interpreted analysis for the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "The stock ticker symbol for momentum analysis (e.g., 'TSLA' for Tesla, Inc.)"
+                    },
+                    "lookback": {
+                        "type": "integer",
+                        "default": 252,
+                        "description": "Number of periods (e.g., days for daily data, minutes for intraday) to calculate momentum, typically ~1 year for daily data."
+                    },
+                    "skip": {
+                        "type": "integer",
+                        "default": 21,
+                        "description": "Number of recent periods to skip to avoid short-term reversal effects, typically ~1 month for daily data."
+                    },
+                    "days": {
+                        "type": "integer",
+                        "default": 450,
+                        "description": "Number of calendar days of historical data to fetch, counting back from today (default yields ~300 trading days). Today's date is April 15, 2025. Must be sufficient to cover lookback + skip periods."
+                    },
+                    "interval": {
+                        "type": "string",
+                        "default": "1d",
+                        "description": "The time interval between data points. Supported values: '1d' for daily, '1m', '5m', '15m', '30m', '60m' for intraday (note: '1m' is limited to last 7 days by Yahoo Finance)."
+                    }
+                },
+                "required": ["symbol"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "volatility_score",
+            "description": "Calculates a volatility score for a financial asset by fetching historical price data from Yahoo Finance using yfinance and computing the annualized standard deviation of daily returns with NumPy, reflecting price stability under Quantitative Analysis. Returns an interpreted analysis for the user.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "symbol": {
+                        "type": "string",
+                        "description": "The stock ticker symbol for volatility analysis (e.g., 'TSLA' for Tesla, Inc.)"
+                    },
+                    "days": {
+                        "type": "integer",
+                        "default": 252,
+                        "description": "Number of trading days to calculate volatility, typically ~1 year. Data fetched covers approximately twice this period to ensure sufficient trading days. Today's date is April 15, 2025."
+                    },
+                    "interval": {
+                        "type": "string",
+                        "default": "1d",
+                        "description": "The time interval between data points. Supported values: '1d' for daily, '1m', '5m', '15m', '30m', '60m' for intraday (note: '1m' is limited to the last 7 days by Yahoo Finance)."
+                    }
+                },
+                "required": ["symbol"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+                "name": "sharpe_ratio",
+                "description": "Calculates the Sharpe ratio for a financial asset by fetching historical price data from Yahoo Finance using yfinance and computing risk-adjusted return with NumPy, reflecting performance per unit of risk under Quantitative Analysis. Returns an interpreted analysis for the user.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {
+                            "type": "string",
+                            "description": "The stock ticker symbol for Sharpe ratio analysis (e.g., 'TSLA' for Tesla, Inc.)."
+                        },
+                        "days": {
+                            "type": "integer",
+                            "default": 252,
+                            "description": "Number of trading days to calculate Sharpe ratio, typically ~1 year of trading days. Data is fetched for approximately twice this period to ensure sufficient trading days. Today's date is April 15, 2025."
+                        },
+                        "risk_free_rate": {
+                            "type": "number",
+                            "default": 0.04,
+                            "description": "Annualized risk-free rate for excess return calculation, typically based on Treasury yields (e.g., 0.04 for 4%)."
+                        },
+                        "interval": {
+                            "type": "string",
+                            "default": "1d",
+                            "description": "The time interval between data points. Supported values: '1d' for daily, '1m', '5m', '15m', '30m', '60m' for intraday (note: '1m' data is limited to the last 7 days by Yahoo Finance)."
+                        }
+                    },
+                    "required": ["symbol"]
+                }
+        }
     }
+
 ]
 
 # Main function to call GPT and handle function calling
@@ -300,6 +400,7 @@ Important:
 - The agent should never give explicit financial advice (e.g., \"buy\" or \"sell\" recommendations) BUT CAN GIVE DATA DRIVEN, RESEARCHED BACKED PROBABILITIES OF SUCCESS BASED ON THE PERFORMANCE SHOWN FROM THE RESEARCHED DATA.
 - Only if needed, try to only ask one question to the user, maximum.
 - Note: do NOT specify the thought leader of the analysis. Just provide the analysis, with any accompanying sources.
+- For queries requiring a momentum score calculation (e.g., ‘What’s the momentum of Tesla?’), you MUST first retrieve price data using get_yahoo_finance before calculating the momentum score with momentum_score to ensure accurate and data-driven results.
 
 Routing Options:
 
@@ -360,6 +461,18 @@ get_agent_h_response: Backtesting & Historical Performance Research Master
 run_intraday_backtest_vectorbt: Run an intraday backtest using vectorBT with a Simple Moving Average (SMA) crossover strategy
 - Intraday backtest using vectorBT
 
+momentum_score: Run an interday backtest using the momentum score, from price data.
+- Intraday backtest using Momentum Score
+- Calculates a momentum score for a financial asset based on historical price data, reflecting the strength of its recent price trend, inspired by Cliff Asness’s quantitative factor models. The function takes an array of adjusted closing prices (e.g., from Yahoo Finance) and computes the cumulative return over a specified lookback period, typically 12 months (252 trading days), while skipping the most recent month (21 days) to avoid short-term reversal effects. The score is normalized to a range of [-1, 1] using the hyperbolic tangent function, making it easy to interpret: positive scores indicate upward momentum (potential buy signal), negative scores suggest downward momentum (potential sell signal), and scores near zero imply no clear trend. This metric is designed for Agent Q to answer queries like “What’s Tesla’s momentum?”
+
+volatility_score: Measures the price volatility of a financial asset using historical data from Yahoo Finance, quantifying risk under Quantitative Analysis.
+- Volatility Analysis: Calculates a volatility score for a financial asset based on historical price data, reflecting the magnitude of its price fluctuations, a key metric in risk assessment. 
+- The function fetches adjusted closing prices (e.g., from Yahoo Finance) and computes the annualized standard deviation of daily returns over a specified period, typically 1 year (~252 trading days). 
+- The score is expressed as a decimal (e.g., 0.45 for 45% volatility), where higher values indicate greater price swings and higher risk, and lower values suggest stability. This metric is designed for Agent Q to answer queries like “What’s Tesla’s volatility?” under Quantitative Analysis.
+
+sharpe_ratio: Evaluates the risk-adjusted return of a financial asset using historical data from Yahoo Finance, optimizing performance analysis under Quantitative Analysis.
+- Risk-Adjusted Return Analysis: Calculates the Sharpe ratio for a financial asset based on historical price data, reflecting return per unit of risk, a cornerstone of portfolio optimization. 
+- The function fetches adjusted closing prices (e.g., from Yahoo Finance) and computes the annualized excess return (return minus risk-free rate) divided by the annualized standard deviation of returns over a specified period, typically 1 year (~252 trading days). The score is a unitless ratio (e.g., 1.2), where higher values indicate better risk-adjusted performance, and negative values suggest losses relative to the risk-free rate (default 4%). This metric is designed for Agent Q to answer queries like “What’s Tesla’s Sharpe ratio?” under Quantitative Analysis.
 """
                 },
                 {"role": "user", "content": query +
@@ -484,6 +597,27 @@ run_intraday_backtest_vectorbt: Run an intraday backtest using vectorBT with a S
                         initial_cash=initial_cash,
                         short_window=short_window,
                         long_window=long_window,
+                    )
+
+                elif func_name == "momentum_score":
+                    print('check uot the args momentum_score', args)
+
+                    result = momentum_score(
+                        symbol=args.get('symbol'),
+                    )
+
+                elif func_name == "volatility_score":
+                    print('check uot the args volatility_score', args)
+
+                    result = volatility_score(
+                        symbol=args.get('symbol'),
+                    )
+
+                elif func_name == "sharpe_ratio":
+                    print('check uot the args sharpe_ratio', args)
+
+                    result = sharpe_ratio(
+                        symbol=args.get('symbol'),
                     )
 
                 # elif func_name == "generate_stock_chart":

@@ -1,7 +1,7 @@
 def validate_tool_call_sequence(tool_calls):
     """
     Validates that:
-    1. If get_yahoo_finance is called, it's followed by a get_agent_*_response function
+    1. If get_yahoo_finance is called, it's followed by a get_agent_*_response function, or momentum_score
     2. All functions are properly paired
 
     Args:
@@ -28,7 +28,10 @@ def validate_tool_call_sequence(tool_calls):
 
         # If current function is get_yahoo_finance, next must be get_agent_*_response
         if current_func == 'get_yahoo_finance':
-            if not (next_func.startswith('get_agent_') and next_func.endswith('_response')):
+            if not (
+                (next_func.startswith('get_agent_') and next_func.endswith('_response')) or
+                next_func == 'momentum_score'
+            ):
                 return False
 
     # Check the last function - it should not be get_yahoo_finance
@@ -36,4 +39,3 @@ def validate_tool_call_sequence(tool_calls):
         return False
 
     return True
-
