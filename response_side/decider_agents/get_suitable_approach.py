@@ -358,6 +358,38 @@ tools = [
                     "required": ["symbol"]
                 }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+                "name": "relative_strength_index",
+                "description": "Calculates the Relative Strength Index (RSI) for a financial asset by fetching historical price data from Yahoo Finance using yfinance and computing momentum with NumPy, reflecting overbought or oversold conditions under Quantitative Analysis. Returns an interpreted analysis for the user.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "symbol": {
+                            "type": "string",
+                            "description": "The stock ticker symbol for RSI analysis (e.g., 'TSLA' for Tesla, Inc.)."
+                        },
+                        "period": {
+                            "type": "integer",
+                            "default": 14,
+                            "description": "Number of periods to calculate RSI, typically 14 for daily data to assess short-term momentum."
+                        },
+                        "days": {
+                            "type": "integer",
+                            "default": 30,
+                            "description": "Number of calendar days of historical data to fetch, typically ~1 month of calendar days. Data is fetched for approximately twice this period to ensure sufficient trading days. Today's date is April 15, 2025."
+                        },
+                        "interval": {
+                            "type": "string",
+                            "default": "1d",
+                            "description": "The time interval between data points. Supported values: '1d' for daily, '1m', '5m', '15m', '30m', '60m' for intraday (note: '1m' data is limited to the last 7 days by Yahoo Finance)."
+                        }
+                    },
+                    "required": ["symbol"]
+                }
+        }
     }
 
 ]
@@ -473,6 +505,11 @@ volatility_score: Measures the price volatility of a financial asset using histo
 sharpe_ratio: Evaluates the risk-adjusted return of a financial asset using historical data from Yahoo Finance, optimizing performance analysis under Quantitative Analysis.
 - Risk-Adjusted Return Analysis: Calculates the Sharpe ratio for a financial asset based on historical price data, reflecting return per unit of risk, a cornerstone of portfolio optimization. 
 - The function fetches adjusted closing prices (e.g., from Yahoo Finance) and computes the annualized excess return (return minus risk-free rate) divided by the annualized standard deviation of returns over a specified period, typically 1 year (~252 trading days). The score is a unitless ratio (e.g., 1.2), where higher values indicate better risk-adjusted performance, and negative values suggest losses relative to the risk-free rate (default 4%). This metric is designed for Agent Q to answer queries like “What’s Tesla’s Sharpe ratio?” under Quantitative Analysis.
+
+relative_strength_index: Assesses short-term momentum and overbought/oversold conditions of a financial asset using historical data from Yahoo Finance, enhancing tactical analysis under Quantitative Analysis.
+- Short-Term Momentum Analysis: Calculates the Relative Strength Index (RSI) for a financial asset based on historical price data, reflecting momentum strength and potential reversals. 
+- The function fetches adjusted closing prices (e.g., from Yahoo Finance) and computes the RSI over a specified period, typically 14 trading days, by comparing average gains to average losses. 
+- The score ranges from 0 to 100, where values above 70 suggest overbought conditions (potential sell signal), below 30 indicate oversold conditions (potential buy signal), and 30-70 imply neutral momentum. This metric is designed for Agent Q to answer queries like “What’s Tesla’s RSI?” under Quantitative Analysis.
 """
                 },
                 {"role": "user", "content": query +
