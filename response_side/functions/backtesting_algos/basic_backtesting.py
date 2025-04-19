@@ -30,7 +30,7 @@ def run_intraday_backtest_vectorbt(
 
         if days_back is None:
             days_back = 1
-            
+
         if interval is None:
             interval = '5m'
 
@@ -58,12 +58,41 @@ def run_intraday_backtest_vectorbt(
                     ).replace(hour=21, minute=0, second=0, microsecond=0)
         start_date = end_date - timedelta(days=days_back)
 
+        # Calculate the number of days between start_date and end_date
+        date_diff = (end_date - start_date).days
+
+        # Define valid intervals
+        valid_intervals = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h"]
+
+        # Adjust interval if necessary
+        if interval not in valid_intervals:
+            raise ValueError(
+                f"Invalid interval. Choose from {valid_intervals}")
+
+        adjusted_interval = interval
+        if interval == "1m" and date_diff > 8:
+            adjusted_interval = "5m"  # Switch to 5-minute interval for longer periods
+            print(
+                f"Warning: Interval changed from 1m to 5m because date range ({date_diff} days) exceeds 8 days.")
+
+        # Adjust moving average windows for 5m interval to approximate 1m signal frequency
+        adjusted_short_window = short_window
+        adjusted_long_window = long_window
+        if adjusted_interval == "5m" and interval == "1m":
+            # Scale windows (5m is 5x less frequent than 1m)
+            adjusted_short_window = max(1, short_window // 5)
+            adjusted_long_window = max(1, long_window // 5)
+            print(
+                f"Adjusted SMA windows: short_window={adjusted_short_window}, long_window={adjusted_long_window} for 5m interval.")
+
         # Fetch data
         stock = yf.Ticker(symbol)
-        df = stock.history(start=start_date, end=end_date, interval=interval)
+        df = stock.history(start=start_date, end=end_date,
+                           interval=adjusted_interval)
 
         if df.empty:
-            raise ValueError(f"No data found for symbol {symbol}")
+            return get_agent_s_response(prompt=f"The user asked to run a backtest. but function returned No data found for symbol {symbol} with interval {adjusted_interval} from {start_date} to {end_date}. Ask user for further action.")
+            # raise ValueError(f"No data found for symbol {symbol} with interval {adjusted_interval} from {start_date} to {end_date}.")
 
         # Calculate moving averages using vectorBT
         short_ma = vbt.MA.run(df['Close'], window=short_window)
@@ -123,7 +152,8 @@ def run_intraday_backtest_vectorbt(
             "trade_count": int(stats['Total Trades']),
             "start_time": start_time,
             "end_time": end_time,
-            "data_points": len(df)
+            "data_points": len(df),
+            "interval_used": adjusted_interval
         }
 
         final_data_str = json.dumps(final_data, indent=2)
