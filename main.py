@@ -2,7 +2,10 @@ import uuid
 import time
 import os
 import jwt
-from fastapi import FastAPI
+
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from agora_token_builder import RtcTokenBuilder
 from fastapi.middleware.cors import CORSMiddleware
 
 from response_side.openai_generate_response import generate_agent_q_response, generate_agent_t_response, generate_agent_ta_response, generate_response
@@ -20,38 +23,98 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-HMS_APP_ACCESS_KEY = os.getenv("HMS_APP_ACCESS_KEY")
-HMS_APP_SECRET = os.getenv("HMS_APP_SECRET")
-# HMS_ROOM_ID = os.getenv("HMS_ROOM_ID")
-HMS_ROOM_ID = "67f5ea1902936b386a840d9e"
-
 AVAILABLE_ROLES = ['host', 'guest']
+
+# Agora credentials from environment variables
+AGORA_APP_ID = os.getenv("AGORA_APP_ID")
+AGORA_APP_CERTIFICATE = os.getenv("AGORA_APP_CERTIFICATE")
 
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
+# Token expiration time (24 hours)
+TOKEN_EXPIRATION_TIME = 24 * 3600
 
-@app.post("/generate-100ms-token")
-async def generate_token(request: TokenRequest):
-    payload = {
-        "access_key": HMS_APP_ACCESS_KEY,
-        "room_id": HMS_ROOM_ID,  # Use the Room ID here
-        "user_id": request.user_id,
-        "role": "guest",
-        "iat": int(time.time()),
-        "exp": int(time.time()) + 3600,
-        "jti": str(uuid.uuid4())
-    }
 
-    print("CHECK OUT PAYLOAD FIRSt", payload)
-    print("HMS_APP_SECRET", HMS_APP_SECRET)
-    token = jwt.encode(payload, HMS_APP_SECRET, algorithm="HS256")
+class TokenRequest(BaseModel):
+    channel_name: str
+    uid: str
+    role: str = "host"  # "host" or "audience"
 
-    print("CHECK OUT TOKEN 668", token)
 
-    return {"token": token, "room_id": HMS_ROOM_ID}
+class TokenResponse(BaseModel):
+    token: str
+    app_id: str
+    channel_name: str
+    uid: str
+    expires_at: int
+
+
+@app.post("/generate-agora-token", response_model=TokenResponse)
+async def generate_agora_token(request: TokenRequest):
+    try:
+        # Validate environment variables
+        if not AGORA_APP_ID or not AGORA_APP_CERTIFICATE:
+            raise HTTPException(
+                status_code=500,
+                detail="Server configuration error: Missing Agora credentials"
+            )
+
+        # Validate inputs
+        if not request.channel_name or not request.uid:
+            raise HTTPException(
+                status_code=400,
+                detail="channel_name and uid are required"
+            )
+
+        # Set role
+        if request.role == "host":
+            role = 1  # RtcRole.Role_Publisher
+        else:
+            role = 2  # RtcRole.Role_Subscriber
+
+        # Calculate expiration time
+        current_timestamp = int(time.time())
+        privilege_expired_ts = current_timestamp + TOKEN_EXPIRATION_TIME
+
+        # Use fixed UIDs instead of auto-assignment
+        if request.uid == "Dion (Admin)":
+            uid_int = 1001  # Fixed UID for admin
+        elif request.uid.isdigit():
+            uid_int = int(request.uid)
+        else:
+            # Generate consistent UID from username hash
+            uid_int = abs(hash(request.uid)) % 900000 + 100000  # 6-digit range
+
+        print(
+            f"Generating token for: channel={request.channel_name}, uid={uid_int}, role={role}")
+
+        # Generate token with integer UID
+        token = RtcTokenBuilder.buildTokenWithUid(
+            AGORA_APP_ID,
+            AGORA_APP_CERTIFICATE,
+            request.channel_name,
+            uid_int,
+            role,
+            privilege_expired_ts
+        )
+
+        return TokenResponse(
+            token=token,
+            app_id=AGORA_APP_ID,
+            channel_name=request.channel_name,
+            uid=str(uid_int),  # Return the integer UID as string
+            expires_at=privilege_expired_ts
+        )
+
+    except Exception as e:
+        print(f"Token generation error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate token: {str(e)}"
+        )
 
 
 @app.post("/fetch_embedding_output")
