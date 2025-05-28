@@ -33,7 +33,7 @@ def get_agent_b_response(prompt, data, results_from_past_tools):
 
         # Encode the full string
         encoded_prompt = urllib.parse.quote(full_prompt)
-        url = f"https://poppyai-api.vercel.app/api/conversation?api_key=gp_Energetic_Turtle_LZyL1NFyUhbsQdCWjFQq8T0xm7g2"
+        url = f"https://api.getpoppy.ai/api/conversation"
 
         payload = {
             "board_id": "autumn-cherry-IDdsX",
@@ -41,7 +41,11 @@ def get_agent_b_response(prompt, data, results_from_past_tools):
             "prompt": full_prompt  # Send unencoded, full prompt
         }
 
-        response = requests.post(url, json=payload)
+        headers = {
+            "x-api-key": "gp_Energetic_Turtle_LZyL1NFyUhbsQdCWjFQq8T0xm7g2"
+        }
+
+        response = requests.post(url, json=payload, headers=headers)
 
         return response.json()
 
