@@ -5,7 +5,7 @@ import jwt
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from agora_token_builder import RtcTokenBuilder
+from agora_token_builder import RtcTokenBuilder, RtmTokenBuilder
 from fastapi.middleware.cors import CORSMiddleware
 
 from response_side.openai_generate_response import generate_agent_q_response, generate_agent_t_response, generate_agent_ta_response, generate_response
@@ -114,6 +114,77 @@ async def generate_agora_token(request: TokenRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate token: {str(e)}"
+        )
+
+# ⭐ NEW: RTM Token Request Model
+
+
+class RTMTokenRequest(BaseModel):
+    user_id: str
+    channel_name: str = None  # Optional for RTM
+
+
+class RTMTokenResponse(BaseModel):
+    token: str
+    app_id: str
+    uid: str
+    expires_at: int
+
+# ⭐ NEW: Generate RTM Token Endpoint
+
+
+@app.post("/generate-agora-rtm-token", response_model=RTMTokenResponse)
+async def generate_agora_rtm_token(request: RTMTokenRequest):
+    try:
+        # Validate environment variables
+        if not AGORA_APP_ID or not AGORA_APP_CERTIFICATE:
+            raise HTTPException(
+                status_code=500,
+                detail="Server configuration error: Missing Agora credentials"
+            )
+
+        # Validate inputs
+        if not request.user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="user_id is required"
+            )
+
+        # Calculate expiration time
+        current_timestamp = int(time.time())
+        privilege_expired_ts = current_timestamp + TOKEN_EXPIRATION_TIME
+
+        # Convert user_id to consistent format
+        if request.user_id.isdigit():
+            uid_str = request.user_id
+        else:
+            # Generate consistent UID from username hash for RTM
+            uid_int = abs(hash(request.user_id)) % 900000 + \
+                100000  # 6-digit range
+            uid_str = str(uid_int)
+
+        print(f"Generating RTM token for: user_id={uid_str}")
+
+        # Generate RTM token with string UID
+        token = RtmTokenBuilder.buildToken(
+            AGORA_APP_ID,
+            AGORA_APP_CERTIFICATE,
+            uid_str,
+            privilege_expired_ts
+        )
+
+        return RTMTokenResponse(
+            token=token,
+            app_id=AGORA_APP_ID,
+            uid=uid_str,
+            expires_at=privilege_expired_ts
+        )
+
+    except Exception as e:
+        print(f"RTM token generation error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate RTM token: {str(e)}"
         )
 
 
